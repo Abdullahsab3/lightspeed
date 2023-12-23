@@ -4,44 +4,45 @@ Generating a reactive microservice can look like this:
 
 - Get the domain driven design from the user as a JSON file for example. This JSON file can be something like this:
 ```json
-
-"service_name": "MyService",
-"entities": [
-    {
-        "User" : 
+{
+    "service_name": "MyService",
+    "entities": [
         {
-            "id": "Uuid",
-            "name" : "String",
-            "surname": "String",
-            "age": "Int",
-            "email": "String",
-            "primary_key": "id",
-            "filter_by": ["name", "age", ["name", "surname"]] 
-            // composite filters are filtered like this: major, minor, subminor, etc.
+            "User" : 
+            {
+                "id": "Uuid",
+                "name" : "String",
+                "surname": "String",
+                "age": "Int",
+                "email": "String",
+                "primary_key": "id",
+                "filter_by": ["name", "age", ["name", "surname"]] 
+                // composite filters are filtered like this: major, minor, subminor, etc.
+            }
+        },
+        {
+            "Car" : 
+            {
+                "id": "Uuid",
+                "name" : "String",
+                "brand": "String",
+                "price": "Int",
+                "ownedBy": "User.id",
+                "primary_key": "id",
+                "filter_by": ["name", "brand"]
+            }
         }
+    ],
+    "kafka": {
+        "topic": "my_topic",
+        "bootstrap_servers": "localhost:9092"
     },
-    {
-        "Car" : 
-        {
-            "id": "Uuid",
-            "name" : "String",
-            "brand": "String",
-            "price": "Int",
-            "ownedBy": "User.id",
-            "primary_key": "id",
-            "filter_by": ["name", "brand"]
-        }
-    }
-],
-"kafka": {
-    "topic": "my_topic",
-    "bootstrap_servers": "localhost:9092"
-},
 
-"container_registry": {
-    "uri": "eu.gcr.io/my-project",
-    "username": "_json_key",
-    "password": "my-key.json"
+    "container_registry": {
+        "uri": "eu.gcr.io/my-project",
+        "username": "_json_key",
+        "password": "my-key.json"
+    }
 }
 
 ```
