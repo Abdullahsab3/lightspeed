@@ -1,0 +1,39 @@
+Generating a reactive microservice can look like this:
+
+- Get the domain driven design from the user as a JSON file for example. This JSON file can be something like this:
+```json
+[
+    {
+        "User" : 
+        {
+            "id": "Uuid",
+            "name" : "String",
+            "age": "Int",
+            "email": "String",
+            "primary_key": "id",
+            "filter_by": ["name", "age"]
+        }
+    },
+    {
+        "Car" : 
+        {
+            "id": "Uuid",
+            "name" : "String",
+            "brand": "String",
+            "price": "Int",
+            "ownedBy": "User.id",
+            "primary_key": "id",
+            "filter_by": ["name", "brand"]
+        }
+    }
+]
+```
+The idea can be futher extended to support more complex types like arrays, maps, enums, etc, or to have more complex relationships between entities.
+
+The things I would like to do in the future are:
+- Possibility to generate the code in different languages, for different frameworks and libraries
+- Possibility to generate different kinds of services like gRPC, CQRS, ingestion pipeline services, etc.
+- Possibility to have more complex relations between attributes.
+
+
+Why not get a database schema instead of a JSON file? I would like to decouple traditional relational databases from this idea. If you would like to generate a CQRS based service or a gRPC service that relies on event sourcing for example, you may not have a traditional database.
