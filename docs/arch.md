@@ -1,3 +1,5 @@
+# General Idea
+
 Generating a reactive microservice can look like this:
 
 - Get the domain driven design from the user as a JSON file for example. This JSON file can be something like this:
@@ -10,10 +12,12 @@ Generating a reactive microservice can look like this:
         {
             "id": "Uuid",
             "name" : "String",
+            "surname": "String",
             "age": "Int",
             "email": "String",
             "primary_key": "id",
-            "filter_by": ["name", "age"]
+            "filter_by": ["name", "age", ["name", "surname"]] 
+            // composite filters are filtered like this: major, minor, subminor, etc.
         }
     },
     {
@@ -51,3 +55,7 @@ The things I would like to do in the future are:
 
 
 Why not get a database schema instead of a JSON file? I would like to decouple traditional relational databases from this idea. If you would like to generate a CQRS based service or a gRPC service that relies on event sourcing for example, you may not have a traditional database.
+
+# High-Level Technical Details
+
+An index can be added to the filter attributes to speed up the filtering process.
