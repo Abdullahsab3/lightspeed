@@ -1,6 +1,8 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
+use crate::templates::{rust::{ATTRIBUTE_TEMPLATE, STRUCT_TEMPLATE}, postgres::PostgresTableGenerator};
+
 
 #[derive(Serialize, Deserialize)]
 pub struct DomainDrivenRequest {
@@ -20,9 +22,21 @@ impl DomainDrivenRequest {
         models
     }
 
+    pub fn generate_postgres_tables(&self) -> Vec<String> {
+        let mut tables = Vec::new();
+        // extract entities in key value pairs
+        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+            println!("{}: {}", entity_name, entity_description);
+            let table = self.generate_table_query(entity_name.to_string(), entity_description.clone());
+            tables.push(table);
+        }
+        tables
+    }
+
 }
 
 impl ModelGenerator for DomainDrivenRequest {}
+impl PostgresTableGenerator for DomainDrivenRequest {}
 
 pub trait ModelGenerator {
     fn generate_struct(&self, name: String, value: Value) -> String {
@@ -39,7 +53,7 @@ pub trait ModelGenerator {
     }
 }
 
-enum AttributeType {
+pub enum AttributeType {
     String,
     Uuid,
     I32,
@@ -48,6 +62,49 @@ enum AttributeType {
     F64,
     Boolean,
     UTCDateTime,
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Serialize, Deserialize)]
+pub enum PostgresAttributeType {
+    VARCHAR,
+    UUID,
+    INT,
+    BIGINT,
+    REAL,
+    DOUBLE_PRECISION,
+    BOOLEAN,
+    TIMESTAMP,
+}
+
+impl From<AttributeType> for PostgresAttributeType {
+    fn from(attribute_type: AttributeType) -> Self {
+        match attribute_type {
+            AttributeType::String => PostgresAttributeType::VARCHAR,
+            AttributeType::Uuid => PostgresAttributeType::UUID,
+            AttributeType::I32 => PostgresAttributeType::INT,
+            AttributeType::I64 => PostgresAttributeType::BIGINT,
+            AttributeType::F32 => PostgresAttributeType::REAL,
+            AttributeType::F64 => PostgresAttributeType::DOUBLE_PRECISION,
+            AttributeType::Boolean => PostgresAttributeType::BOOLEAN,
+            AttributeType::UTCDateTime => PostgresAttributeType::TIMESTAMP,
+        }
+    }
+}
+
+impl ToString for PostgresAttributeType {
+    fn to_string(&self) -> String {
+        match self {
+            PostgresAttributeType::VARCHAR => "VARCHAR(255)".to_string(),
+            PostgresAttributeType::UUID => "UUID".to_string(),
+            PostgresAttributeType::INT => "INT".to_string(),
+            PostgresAttributeType::BIGINT => "BIGINT".to_string(),
+            PostgresAttributeType::REAL => "REAL".to_string(),
+            PostgresAttributeType::DOUBLE_PRECISION => "DOUBLE PRECISION".to_string(),
+            PostgresAttributeType::BOOLEAN => "BOOLEAN".to_string(),
+            PostgresAttributeType::TIMESTAMP => "TIMESTAMP".to_string(),
+        }
+    }
 }
 
 impl AttributeType {
@@ -80,14 +137,3 @@ impl ToString for AttributeType {
         }
     }
 }
-
-static STRUCT_TEMPLATE: &str = r#"
-#[derive(Serialize, Deserialize)]
-pub struct {struct_name} {
-    {attributes}
-}
-"#;
-
-static ATTRIBUTE_TEMPLATE: &str = r#"
-    pub {attribute_name}: {attribute_type},
-"#;

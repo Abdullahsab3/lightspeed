@@ -1,4 +1,5 @@
 pub mod models;
+pub mod templates;
 
 fn main() {
     let test_json = r#"
@@ -27,4 +28,9 @@ fn main() {
     for model in models {
         println!("{}", model);
     }
+    let tables = ddr.generate_postgres_tables();
+    for table in tables {
+        println!("{}", table);
+    }
+    
 }
