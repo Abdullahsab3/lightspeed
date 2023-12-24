@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use strum::EnumProperty;
 
-use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}};
+use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator, service_templates::ServiceGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}};
 
 
 
@@ -84,6 +84,20 @@ impl DomainDrivenRequest {
         }
         sources
     }
+
+    pub fn generate_services(&self) -> Vec<String> {
+        let mut services = Vec::new();
+        // extract entities in key value pairs
+        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+            let create_fn = ServiceGenerator::generate_create_entity_fn(self, &entity_name.to_string());
+            let update_fn = ServiceGenerator::generate_update_entity_fn(self, &entity_name.to_string());
+            let delete_fn = ServiceGenerator::generate_delete_entity_fn(self, &entity_name.to_string());
+            services.push(create_fn);
+            services.push(update_fn);
+            services.push(delete_fn);
+        }
+        services
+    }
     
 
 }
@@ -93,6 +107,7 @@ impl PostgresTableGenerator for DomainDrivenRequest {}
 impl ControllerGenerator for DomainDrivenRequest {}
 impl CrudQueryGenerator for DomainDrivenRequest {}
 impl SourceGenerator for DomainDrivenRequest {}
+impl ServiceGenerator for DomainDrivenRequest {}
 
 
 pub enum AttributeType {
