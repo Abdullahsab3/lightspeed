@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use strum::EnumProperty;
 
-use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator, service_templates::ServiceGenerator, axum_routes_template::AxumRoutesGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}};
+use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator, service_templates::ServiceGenerator, axum_routes_templates::AxumRoutesGenerator, error_templates::ErrorGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}};
 
 
 
@@ -106,6 +106,14 @@ impl DomainDrivenRequest {
     pub fn get_entity_names(&self) -> Vec<String> {
         self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap()).map(|(entity_name, _)| entity_name.to_string()).collect::<Vec<String>>()
     }
+
+    pub fn generate_errors(&self) -> Vec<String> {
+        let mut errors = Vec::new();
+        // extract entities in key value pairs
+        errors.push(ErrorGenerator::generate_server_error_enums(self, self.get_entity_names()));
+        errors.push(ErrorGenerator::generate_client_error_enums(self, self.get_entity_names()));
+        errors
+    }
     
 
 }
@@ -117,6 +125,7 @@ impl CrudQueryGenerator for DomainDrivenRequest {}
 impl SourceGenerator for DomainDrivenRequest {}
 impl ServiceGenerator for DomainDrivenRequest {}
 impl AxumRoutesGenerator for DomainDrivenRequest {}
+impl ErrorGenerator for DomainDrivenRequest {}
 
 
 pub enum AttributeType {

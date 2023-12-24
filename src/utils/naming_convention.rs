@@ -32,6 +32,10 @@ pub fn to_snake_case(camel_case: &str) -> String {
     snake_case
 }
 
+pub fn to_upper_snake_case(camel_case: &str) -> String {
+    to_snake_case(camel_case).to_ascii_uppercase()
+}
+
 pub fn to_plural(entity: &str) -> String {
     entity.to_string() + "s"
 }

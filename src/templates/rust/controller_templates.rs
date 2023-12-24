@@ -84,9 +84,9 @@ pub trait ControllerGenerator {
             .replace("{entity_name}", &entity_name)
     }
 
-    fn generate_create_payload(&self, entity_name: &str, value: Value) -> String {
+    fn generate_create_payload(&self, entity_name: &str, entity: Value) -> String {
         let mut attributes = String::new();
-        for (key, value) in value.as_object().unwrap() {
+        for (key, value) in entity.as_object().unwrap() {
             if key == "id" {
                 continue;
             }
@@ -100,9 +100,9 @@ pub trait ControllerGenerator {
             .replace("{attributes}", &attributes)
     }
 
-    fn generate_update_payload(&self, entity_name: &str, value: Value) -> String {
+    fn generate_update_payload(&self, entity_name: &str, entity: Value) -> String {
         let mut attributes = String::new();
-        for (key, value) in value.as_object().unwrap() {
+        for (key, value) in entity.as_object().unwrap() {
             if key == "id" {
                 continue;
             }

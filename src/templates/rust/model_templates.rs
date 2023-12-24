@@ -12,12 +12,20 @@ pub struct {struct_name} {
 pub static ATTRIBUTE_TEMPLATE: &str = r#"
     pub {attribute_name}: {attribute_type},"#;
 
+pub static ENUM_TEMPLATE: &str = r#"
+#[derive(Serialize, Deserialize)]
+pub enum {enum_name} {
+    {enum_values}
+}
+"#;
 
+pub static ENUM_VALUE_TEMPLATE: &str = r#"
+    {enum_value},"#;
 
 pub trait ModelGenerator {
-    fn generate_struct(&self, name: &str, value: Value) -> String {
+    fn generate_struct(&self, name: &str, entity: Value) -> String {
         let mut attributes = String::new();
-        for (key, value) in value.as_object().unwrap() {
+        for (key, value) in entity.as_object().unwrap() {
             let attribute_type = AttributeType::from_str(value.as_str().unwrap());
             attributes.push_str(&ATTRIBUTE_TEMPLATE
                 .replace("{attribute_name}", key)
@@ -35,6 +43,17 @@ pub trait ModelGenerator {
             entity_values.push_str(&format!("{}.{}, ", to_snake_case(entity_name), field_name));
         }
         entity_values
-
     }
+
+    fn generate_enum(&self, name: &str, enum_values: Vec<String>) -> String {
+        let mut values = String::new();
+        for value in enum_values {
+            values.push_str(&ENUM_VALUE_TEMPLATE.replace("{enum_value}", &value));
+        }
+        ENUM_TEMPLATE
+            .replace("{enum_name}", &name)
+            .replace("{enum_values}", &values)
+    }
+
+    
 }
