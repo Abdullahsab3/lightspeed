@@ -8,6 +8,9 @@ Lightspeed: Speed up the development process and generate CRUD based (reactive) 
 - Add support for kafka events
 - Add support for foreign keys, primary keys, unique keys
 - Add support for IaC (Kubernetes & Docker)
+- Generate docker-compose
+- Generate config.toml file
+- Generate Cargo.toml file
 
 # Nice to Have
 - The bigger picture: A universal template engine for CRUD microservices: All you have to do, is define the template in a language of choice, using the template keywords and the language conventions.
