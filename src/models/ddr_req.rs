@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
+use strum::EnumProperty;
 
 use crate::templates::{rust::{ATTRIBUTE_TEMPLATE, STRUCT_TEMPLATE, ControllerGenerator}, postgres::PostgresTableGenerator};
 
@@ -74,11 +75,13 @@ pub enum AttributeType {
     F64,
     Boolean,
     UTCDateTime,
+    Option(Box<AttributeType>),
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, strum_macros::EnumProperty)]
 pub enum PostgresAttributeType {
+
     VARCHAR,
     UUID,
     INT,
@@ -87,8 +90,15 @@ pub enum PostgresAttributeType {
     DOUBLE_PRECISION,
     BOOLEAN,
     TIMESTAMP,
+    #[strum(props(is_nullable = "true"))]
+    OPTION(Box<PostgresAttributeType>),
 }
 
+impl PostgresAttributeType {
+    pub fn is_nullable(&self) -> bool {
+        self.get_bool("is_nullable").unwrap_or(false)
+    }
+}
 impl From<AttributeType> for PostgresAttributeType {
     fn from(attribute_type: AttributeType) -> Self {
         match attribute_type {
@@ -100,13 +110,15 @@ impl From<AttributeType> for PostgresAttributeType {
             AttributeType::F64 => PostgresAttributeType::DOUBLE_PRECISION,
             AttributeType::Boolean => PostgresAttributeType::BOOLEAN,
             AttributeType::UTCDateTime => PostgresAttributeType::TIMESTAMP,
+            AttributeType::Option(attribute_type) => PostgresAttributeType::OPTION(Box::new(Into::<PostgresAttributeType>::into(*attribute_type))),
         }
     }
 }
 
+
 impl ToString for PostgresAttributeType {
     fn to_string(&self) -> String {
-        match self {
+        let attr_type = match self {
             PostgresAttributeType::VARCHAR => "VARCHAR(255)".to_string(),
             PostgresAttributeType::UUID => "UUID".to_string(),
             PostgresAttributeType::INT => "INT".to_string(),
@@ -115,7 +127,9 @@ impl ToString for PostgresAttributeType {
             PostgresAttributeType::DOUBLE_PRECISION => "DOUBLE PRECISION".to_string(),
             PostgresAttributeType::BOOLEAN => "BOOLEAN".to_string(),
             PostgresAttributeType::TIMESTAMP => "TIMESTAMP".to_string(),
-        }
+            PostgresAttributeType::OPTION(attribute_type) => format!("{}", attribute_type.to_string()),
+        };
+        attr_type + if self.is_nullable() { "" } else { " NOT NULL" }
     }
 }
 
@@ -130,9 +144,13 @@ impl AttributeType {
             "f64" => AttributeType::F64,
             "bool" => AttributeType::Boolean,
             "UTCDateTime" => AttributeType::UTCDateTime,
-            _ => panic!("Unknown attribute type: {}", s),
+            _ if s.starts_with("Option<") && s.ends_with(">") => {
+                let inner_type = s[7..s.len() - 1].to_string();
+                AttributeType::Option(Box::new(AttributeType::from_str(inner_type.as_str())))
+            }
+            _ => panic!("Invalid attribute type: {}", s),
         }
-    }
+}
 }
 
 impl ToString for AttributeType {
@@ -146,6 +164,7 @@ impl ToString for AttributeType {
             AttributeType::F64 => "f64".to_string(),
             AttributeType::Boolean => "bool".to_string(),
             AttributeType::UTCDateTime => "UTCDateTime".to_string(),
+            AttributeType::Option(attribute_type) => format!("Option<{}>", attribute_type.to_string()),
         }
     }
 }

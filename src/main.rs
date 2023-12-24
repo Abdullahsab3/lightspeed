@@ -10,7 +10,7 @@ fn main() {
             {
                 "Person": {
                     "name": "String",
-                    "age": "i32",
+                    "age": "Option<i32>",
                     "height": "f32",
                     "is_cool": "bool"
                 },
