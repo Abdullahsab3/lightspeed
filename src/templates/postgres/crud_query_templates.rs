@@ -15,7 +15,7 @@ pub static UPDATE_ENTITY_QUERY: &str = r#"
             SET 
                 {entity_fields}
             WHERE id = {entity_id}
-            RETURNING *;‡
+            RETURNING *;
 "#;
 
 pub static DELETE_ENTITY_QUERY: &str = r#"
