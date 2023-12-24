@@ -16,15 +16,20 @@ pub static AXUM_ENTITY_ROUTE_TEMPLATE: &str = r#"
         .route("/v1/{sc_entity_name}s/:id", get(get_{sc_entity_name}).put(update_{sc_entity_name}).delete(delete_{sc_entity_name}))"#;
 
 pub trait AxumRoutesGenerator {
-    fn generate_axum_routes(&self, entity_name: String) -> String {
-        let sc_entity_name = to_snake_case(&entity_name);
-        let entity_collection_endpoint = AXUM_ENTITIY_COLLECTION_ROUTE_TEMPLATE
-            .replace("{sc_entity_name}", &sc_entity_name);
-        let entity_endpoint = AXUM_ENTITY_ROUTE_TEMPLATE
-            .replace("{sc_entity_name}", &sc_entity_name);
-        let entity_routes = format!("{}{}", entity_collection_endpoint, entity_endpoint);
-        AXUM_ROUTES_SYSTEM_TEMPLATE
-            .replace("{axum_entity_routes}", &entity_routes)
-            
+    fn generate_axum_routes(&self, entity_names: Vec<String>) -> String {
+        let sc_entity_names = entity_names.iter().map(|x| to_snake_case(x)).collect::<Vec<String>>();
+        let mut axum_routes = String::new();
+        for sc_entity_name in sc_entity_names{
+            let entity_route = AXUM_ENTITY_ROUTE_TEMPLATE.replace("{sc_entity_name}", &sc_entity_name);
+            let entity_collection_route = AXUM_ENTITIY_COLLECTION_ROUTE_TEMPLATE.replace("{sc_entity_name}", &sc_entity_name);
+            axum_routes.push_str(&entity_collection_route);
+            axum_routes.push_str(&entity_route);
+        }
+        axum_routes
+    }
+
+    fn generate_axum_routes_system(&self, entity_names: Vec<String>) -> String {
+        let axum_routes = self.generate_axum_routes(entity_names);
+        AXUM_ROUTES_SYSTEM_TEMPLATE.replace("{axum_entity_routes}", &axum_routes)
     }
 }

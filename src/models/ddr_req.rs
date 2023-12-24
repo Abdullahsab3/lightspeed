@@ -88,7 +88,7 @@ impl DomainDrivenRequest {
     pub fn generate_services(&self) -> Vec<String> {
         let mut services = Vec::new();
         // extract entities in key value pairs
-        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+        for(entity_name, _) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
             let create_fn = ServiceGenerator::generate_create_entity_fn(self, &entity_name.to_string());
             let update_fn = ServiceGenerator::generate_update_entity_fn(self, &entity_name.to_string());
             let delete_fn = ServiceGenerator::generate_delete_entity_fn(self, &entity_name.to_string());
@@ -99,14 +99,12 @@ impl DomainDrivenRequest {
         services
     }
 
-    pub fn generate_axum_routes(&self) -> String {
-        let mut axum_routes = String::new();
-        // extract entities in key value pairs
-        for(entity_name, _) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
-            let entity_routes = AxumRoutesGenerator::generate_axum_routes(self, entity_name.to_string());
-            axum_routes.push_str(&entity_routes);
-        }
-        axum_routes
+    pub fn generate_axum_routes_system(&self) -> String {
+        AxumRoutesGenerator::generate_axum_routes_system(self, self.get_entity_names())
+    }
+
+    pub fn get_entity_names(&self) -> Vec<String> {
+        self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap()).map(|(entity_name, _)| entity_name.to_string()).collect::<Vec<String>>()
     }
     
 
