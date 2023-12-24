@@ -25,8 +25,8 @@ fn main() {
     }
     "#;
     let ddr: models::ddr_req::DomainDrivenRequest = serde_json::from_str(test_json).unwrap();
-    let controllers = ddr.generate_controllers();
-    for controller in controllers {
-        println!("{}", controller);
+    let services = ddr.generate_services();
+    for service in services {
+        println!("{}", service);
     }
 }

@@ -1,6 +1,7 @@
 use crate::utils::naming_convention::{to_snake_case, to_plural};
 
-pub static IMPORT_TEMPLATE: &str = r#"use crate::{import};"#;
+pub static IMPORT_TEMPLATE: &str = r#"
+use crate::{import};"#;
 
 pub static IMPORT_MODEL_TEMPLATE: &str = r#"models::{sc_entity_name}::{entity_name}"#;
 
