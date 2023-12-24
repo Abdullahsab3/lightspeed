@@ -93,7 +93,7 @@ impl {entity_plural}Service {
         }
     }
 
-    {servcice_functions}
+    {service_functions}
 }
 "#;
 
@@ -177,6 +177,6 @@ pub trait ServiceGenerator: ImportGenerator {
             .replace("{entity_imports}", &entity_imports)
             .replace("{entity_plural}", &to_plural(entity_name))
             .replace("{sc_plural_entity_name}", &to_snake_case_plural(entity_name))
-            .replace("{servcice_functions}", &service_functions)
+            .replace("{service_functions}", &service_functions)
     }
 }

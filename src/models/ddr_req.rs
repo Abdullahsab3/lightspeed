@@ -61,20 +61,6 @@ impl DomainDrivenRequest {
         queries
     }
 
-    pub fn generate_sources(&self) -> Vec<String> {
-        let mut sources = Vec::new();
-        // extract entities in key value pairs
-        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
-            let create_fn = SourceGenerator::generate_create_fn(self, &entity_name.to_string(), entity_description);
-            let update_fn = SourceGenerator::generate_update_fn(self, &entity_name.to_string(), entity_description);
-            let delete_fn = SourceGenerator::generate_delete_fn(self, &entity_name.to_string());
-            sources.push(create_fn);
-            sources.push(update_fn);
-            sources.push(delete_fn);
-        }
-        sources
-    }
-
     pub fn generate_axum_routes_system(&self) -> String {
         AxumRoutesGenerator::generate_axum_routes_system(self, self.get_entity_names())
     }
@@ -126,10 +112,18 @@ impl DomainDrivenRequest {
             service.push(service_fn);
         }
         service
-    
+    }
+
+    pub fn generate_sources(&self) -> Vec<String> {
+        let mut sources = Vec::new();
+        // extract entities in key value pairs
+        for(entity_name, entity_value) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+            let source_file = SourceGenerator::generate_source(self, &entity_name.to_string(), &entity_value.clone());
+            sources.push(source_file);
+        }
+        sources
     }
     
-
 }
 
 impl ModelGenerator for DomainDrivenRequest {}

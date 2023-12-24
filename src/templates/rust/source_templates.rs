@@ -1,67 +1,89 @@
 use serde_json::Value;
 
-use crate::{utils::naming_convention::to_snake_case, templates::postgres::crud_query_templates::CrudQueryGenerator};
+use crate::{utils::naming_convention::{to_snake_case, to_plural}, templates::postgres::crud_query_templates::CrudQueryGenerator};
 
-use super::model_templates::ModelGenerator;
+use super::{model_templates::ModelGenerator, import_templates::ImportGenerator};
 
 pub static CREATE_ENTITY_FN: &str = r##"
-pub async fn create_{sc_entity_name}(
-    &self,
-    {sc_entity_name}: {entity_name}
-) -> Result<{entity_name}, sqlx::Error> {
-    let mut transaction = self.pool.begin().await?;
-    let new_{sc_entity_name} = sqlx::query_as!(
-        {entity_name},
-        r#"{create_query}
-        "#,
-        {entity_values}
-    )
-    .fetch_one(&mut transaction)
-    .await?;
-    transaction.commit().await?;
-    Ok(new_{sc_entity_name})
-}
+    pub async fn create_{sc_entity_name}(
+        &self,
+        {sc_entity_name}: {entity_name}
+    ) -> Result<{entity_name}, sqlx::Error> {
+        let mut transaction = self.pool.begin().await?;
+        let new_{sc_entity_name} = sqlx::query_as!(
+            {entity_name},
+            r#"{create_query}
+            "#,
+            {entity_values}
+        )
+        .fetch_one(&mut transaction)
+        .await?;
+        transaction.commit().await?;
+        Ok(new_{sc_entity_name})
+    }
 "##;
 
 pub static UPDATE_ENTITY_FN: &str = r##"
-pub async fn update_{sc_entity_name}(
-    &self,
-    {sc_entity_name}: {entity_name}
-) -> Result<{entity_name}, sqlx::Error> {
-    let mut transaction = self.pool.begin().await?;
-    let updated_{sc_entity_name} = sqlx::query_as!(
-        {entity_name},
-        r#"{update_query}
-        "#,
-        {entity_values}
-    )
-    .fetch_one(&mut transaction)
-    .await?;
-    transaction.commit().await?;
-    Ok(updated_{sc_entity_name})
-}
+    pub async fn update_{sc_entity_name}(
+        &self,
+        {sc_entity_name}: {entity_name}
+    ) -> Result<{entity_name}, sqlx::Error> {
+        let mut transaction = self.pool.begin().await?;
+        let updated_{sc_entity_name} = sqlx::query_as!(
+            {entity_name},
+            r#"{update_query}
+            "#,
+            {entity_values}
+        )
+        .fetch_one(&mut transaction)
+        .await?;
+        transaction.commit().await?;
+        Ok(updated_{sc_entity_name})
+    }
 "##;
 
 pub static DELETE_ENTITY_FN: &str = r##"
-pub async fn delete_{sc_entity_name}(
-    &self,
-    {sc_entity_name}_id: i32
-) -> Result<(), sqlx::Error> {
-    let mut transaction = self.pool.begin().await?;
-    sqlx::query_as!(
-        {entity_name},
-        r#"{delete_query}
-        "#,
-        {sc_entity_name}_id
-    )
-    .execute(&mut transaction)
-    .await?;
-    transaction.commit().await?;
-    Ok(())
-}
+    pub async fn delete_{sc_entity_name}(
+        &self,
+        {sc_entity_name}_id: i32
+    ) -> Result<(), sqlx::Error> {
+        let mut transaction = self.pool.begin().await?;
+        sqlx::query_as!(
+            {entity_name},
+            r#"{delete_query}
+            "#,
+            {sc_entity_name}_id
+        )
+        .execute(&mut transaction)
+        .await?;
+        transaction.commit().await?;
+        Ok(())
+    }
 "##;
 
-pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator {
+pub static SOURCE_FILE_TEMPLATE: &str = r#"
+use std::sync::Arc;
+
+use sqlx::{Pool, Postgres};
+
+{entity_imports}
+
+pub struct {entity_plural}Table {
+    pool: Arc<Pool<Postgres>>
+}
+
+impl {entity_plural}Table {
+    pub fn new(pool: Arc<Pool<Postgres>>) -> Self {
+        Self {
+            pool
+        }
+    }
+
+    {source_functions}
+}"#;
+
+
+pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerator {
     fn generate_create_fn(&self, entity_name: &str, entity: &Value) -> String {
         let sc_entity_name = to_snake_case(entity_name);
         let create_query = self.generate_create_query(entity_name, &entity);
@@ -91,6 +113,20 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator {
             .replace("{sc_entity_name}", &sc_entity_name)
             .replace("{entity_name}", &entity_name)
             .replace("{delete_query}", &delete_query)
+    }
+
+    fn generate_source(&self, entity_name: &str, entity: &Value) -> String {
+        let entity_imports = self.generate_model_imports(entity_name);
+
+        let mut source_functions = String::new();
+        source_functions.push_str(&self.generate_create_fn(entity_name, &entity));
+        source_functions.push_str(&self.generate_update_fn(entity_name, &entity));
+        source_functions.push_str(&self.generate_delete_fn(entity_name));
+
+        SOURCE_FILE_TEMPLATE
+            .replace("{entity_imports}", &entity_imports)
+            .replace("{entity_plural}", &to_plural(entity_name))
+            .replace("{source_functions}", &source_functions)
     }
     
 }
