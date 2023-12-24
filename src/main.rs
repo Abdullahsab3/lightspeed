@@ -37,5 +37,9 @@ fn main() {
     for controller in controllers {
         println!("{}", controller);
     }
+    let payloads = ddr.generate_payloads();
+    for payload in payloads {
+        println!("{}", payload);
+    }
     
 }

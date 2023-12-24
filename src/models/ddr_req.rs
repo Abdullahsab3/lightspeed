@@ -2,7 +2,8 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use strum::EnumProperty;
 
-use crate::templates::{rust::{ATTRIBUTE_TEMPLATE, STRUCT_TEMPLATE, ControllerGenerator}, postgres::PostgresTableGenerator};
+use crate::templates::{rust::{controller_templates::ControllerGenerator, model_template::ModelGenerator}, postgres::table_templates::PostgresTableGenerator};
+
 
 
 #[derive(Serialize, Deserialize)]
@@ -16,7 +17,6 @@ impl DomainDrivenRequest {
         let mut models = Vec::new();
         // extract entities in key value pairs
         for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
-            println!("{}: {}", entity_name, entity_description);
             let model = self.generate_struct(entity_name.to_string(), entity_description.clone());
             models.push(model);
         }
@@ -27,7 +27,6 @@ impl DomainDrivenRequest {
         let mut tables = Vec::new();
         // extract entities in key value pairs
         for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
-            println!("{}: {}", entity_name, entity_description);
             let table = self.generate_table_query(entity_name.to_string(), entity_description.clone());
             tables.push(table);
         }
@@ -37,12 +36,24 @@ impl DomainDrivenRequest {
     pub fn generate_controllers(&self) -> Vec<String> {
         let mut controllers = Vec::new();
         // extract entities in key value pairs
-        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
-            println!("{}: {}", entity_name, entity_description);
+        for(entity_name, _) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
             let controller = self.generate_create_fn(&entity_name.to_string());
             controllers.push(controller);
         }
         controllers
+    }
+
+    pub fn generate_payloads(&self) -> Vec<String> {
+        let mut payloads = Vec::new();
+        // extract entities in key value pairs
+        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+            let create_payload = self.generate_create_payload(&entity_name.to_string(), entity_description.clone());
+            let update_payload = self.generate_update_payload(&entity_name.to_string(), entity_description.clone());
+            
+            payloads.push(create_payload);
+            payloads.push(update_payload);
+        }
+        payloads
     }
 
 }
@@ -51,20 +62,6 @@ impl ModelGenerator for DomainDrivenRequest {}
 impl PostgresTableGenerator for DomainDrivenRequest {}
 impl ControllerGenerator for DomainDrivenRequest {}
 
-pub trait ModelGenerator {
-    fn generate_struct(&self, name: String, value: Value) -> String {
-        let mut attributes = String::new();
-        for (key, value) in value.as_object().unwrap() {
-           let attribute_type = AttributeType::from_str(value.as_str().unwrap());
-            attributes.push_str(&ATTRIBUTE_TEMPLATE
-                .replace("{attribute_name}", key)
-                .replace("{attribute_type}", &attribute_type.to_string()));
-        }
-        STRUCT_TEMPLATE
-            .replace("{struct_name}", &name)
-            .replace("{attributes}", &attributes)
-    }
-}
 
 pub enum AttributeType {
     String,
