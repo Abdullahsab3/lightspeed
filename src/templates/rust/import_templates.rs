@@ -9,7 +9,7 @@ pub static IMPORT_SOURCE_TEMPLATE: &str = r#"sources::{sc_entity_name}::{entity_
 
 pub static IMPORT_SERVICE_TEMPLATE: &str = r#"services::{sc_entity_name}::{entity_plural}Service"#;
 
-pub static IMPORT_CONTROLLER_TEMPLATE: &str = r#"controllers::{sc_entity_name}_controller::*"#;
+pub static IMPORT_CONTROLLER_TEMPLATE: &str = r#"controllers::{sc_entity_plural}_controller::*"#;
 
 pub trait ImportGenerator {
     fn generate_model_imports(&self, entity_name: &str) -> String {

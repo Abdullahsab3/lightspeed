@@ -83,13 +83,13 @@ use sqlx::{Pool, Postgres};
 use crate::error::Error;
 
 pub struct {entity_plural}Service {
-    {sc_plural_entity_name}_table: {entity_plural}Table,
+    {sc_entity_plural}_table: {entity_plural}Table,
 }
 
 impl {entity_plural}Service {
     pub fn new(db_pool: &Arc<Pool<Postgres>>) -> Self {
         Self {
-            {sc_plural_entity_name}_table: {entity_plural}Table::new(db_pool),
+            {sc_entity_plural}_table: {entity_plural}Table::new(db_pool),
         }
     }
 
@@ -176,7 +176,7 @@ pub trait ServiceGenerator: ImportGenerator {
         SERVICE_FILE_TEMPLATE
             .replace("{entity_imports}", &entity_imports)
             .replace("{entity_plural}", &to_plural(entity_name))
-            .replace("{sc_plural_entity_name}", &to_snake_case_plural(entity_name))
+            .replace("{sc_entity_plural}", &to_snake_case_plural(entity_name))
             .replace("{service_functions}", &service_functions)
     }
 }
