@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use crate::{models::ddr_req::{AttributeType, PostgresAttributeType}, utils::naming_convention::{to_snake_case, to_plural}};
+use crate::{models::ddr_req::{AttributeType, PostgresAttributeType}, utils::naming_convention::to_table_name};
 
 
 pub static SQL_TABLE_QUERY_TEMPLATE: &str = r#"
@@ -14,7 +14,7 @@ pub static SQL_ATTRIBUTE_TEMPLATE: &str = r#"
 
 pub trait PostgresTableGenerator {
     fn generate_table_query(&self, entity_name: String, entity: Value) -> String {
-        let plural_entity_name = to_plural(&to_snake_case(&entity_name));
+        let table_name = to_table_name(&entity_name);
         let mut attributes = String::new();
         for (key, value) in entity.as_object().unwrap() {
             let attribute_type = AttributeType::from_str(value.as_str().unwrap());
@@ -33,7 +33,7 @@ pub trait PostgresTableGenerator {
             
         }
         SQL_TABLE_QUERY_TEMPLATE
-            .replace("{table_name}", &plural_entity_name)
+            .replace("{table_name}", &table_name)
             .replace("{attributes}", &attributes)
     }
 }

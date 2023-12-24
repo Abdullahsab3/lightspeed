@@ -24,5 +24,9 @@ fn main() {
         ]
     }
     "#;
-    let _: models::ddr_req::DomainDrivenRequest = serde_json::from_str(test_json).unwrap();
+    let ddr: models::ddr_req::DomainDrivenRequest = serde_json::from_str(test_json).unwrap();
+    let queries = ddr.generate_queries();
+    for query in queries {
+        println!("{}", query);
+    }
 }

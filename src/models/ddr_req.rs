@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use strum::EnumProperty;
 
-use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator}, postgres::table_templates::PostgresTableGenerator};
+use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}};
 
 
 
@@ -56,11 +56,27 @@ impl DomainDrivenRequest {
         payloads
     }
 
+    pub fn generate_queries(&self) -> Vec<String> {
+        let mut queries = Vec::new();
+        // extract entities in key value pairs
+        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+            let create_query = self.generate_create_query(&entity_name.to_string(), entity_description.clone());
+            let update_query = self.generate_update_query(&entity_name.to_string(), entity_description.clone());
+            let delete_query = self.generate_delete_query(&entity_name.to_string());
+            
+            queries.push(create_query);
+            queries.push(update_query);
+            queries.push(delete_query);
+        }
+        queries
+    }
+
 }
 
 impl ModelGenerator for DomainDrivenRequest {}
 impl PostgresTableGenerator for DomainDrivenRequest {}
 impl ControllerGenerator for DomainDrivenRequest {}
+impl CrudQueryGenerator for DomainDrivenRequest {}
 
 
 pub enum AttributeType {
