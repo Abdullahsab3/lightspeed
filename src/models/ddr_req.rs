@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use strum::EnumProperty;
 
-use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator, service_templates::ServiceGenerator, axum_routes_templates::AxumRoutesGenerator, error_templates::ErrorGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}};
+use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator, service_templates::ServiceGenerator, axum_routes_templates::AxumRoutesGenerator, error_templates::ErrorGenerator, import_templates::ImportGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}};
 
 
 
@@ -115,6 +115,22 @@ impl DomainDrivenRequest {
         errors.push(ErrorGenerator::generate_error_impl(self, self.get_entity_names()));
         errors
     }
+
+    pub fn generate_imports(&self) -> Vec<String> {
+        let mut imports = Vec::new();
+        // extract entities in key value pairs
+        for(entity_name, _) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+            let model_import = ImportGenerator::generate_model_imports(self, &entity_name.to_string());
+            let source_import = ImportGenerator::generate_source_imports(self, &entity_name.to_string());
+            let service_import = ImportGenerator::generate_service_imports(self, &entity_name.to_string());
+            let controller_import = ImportGenerator::generate_controller_imports(self, &entity_name.to_string());
+            imports.push(model_import);
+            imports.push(source_import);
+            imports.push(service_import);
+            imports.push(controller_import);
+        }
+        imports
+    }
     
 
 }
@@ -127,6 +143,7 @@ impl SourceGenerator for DomainDrivenRequest {}
 impl ServiceGenerator for DomainDrivenRequest {}
 impl AxumRoutesGenerator for DomainDrivenRequest {}
 impl ErrorGenerator for DomainDrivenRequest {}
+impl ImportGenerator for DomainDrivenRequest {}
 
 
 pub enum AttributeType {

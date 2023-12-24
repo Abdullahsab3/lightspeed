@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use crate::utils::naming_convention::to_table_name;
+use crate::utils::naming_convention::to_snake_case_plural;
 
 pub static CREATE_ENTITY_QUERY: &str = r#"
             INSERT INTO {entity_name}
@@ -25,7 +25,7 @@ pub static DELETE_ENTITY_QUERY: &str = r#"
 
 pub trait CrudQueryGenerator {
     fn generate_create_query(&self, entity_name: &str, entity_description: &Value) -> String {
-        let table_name = to_table_name(entity_name);
+        let table_name = to_snake_case_plural(entity_name);
         let mut entity_fields = Vec::new();
         let mut entity_values = Vec::new();
         for (arg_num, (field_name, _)) in entity_description.as_object().unwrap().iter().enumerate() {
@@ -40,7 +40,7 @@ pub trait CrudQueryGenerator {
             .replace("{entity_values}", &entity_values)
     }
     fn generate_update_query(&self, entity_name: &str, entity_description: &Value) -> String {
-        let table_name = to_table_name(entity_name);
+        let table_name = to_snake_case_plural(entity_name);
         let mut entity_fields = Vec::new();
         for (arg_num, (field_name, _)) in entity_description.as_object().unwrap().iter().enumerate() {
             entity_fields.push(format!("{} = ${}", field_name, arg_num + 1 ));
@@ -52,7 +52,7 @@ pub trait CrudQueryGenerator {
             .replace("{entity_id}", &format!("${}", entity_description.as_object().unwrap().len() + 1))
     }
     fn generate_delete_query(&self, entity_name: &str) -> String {
-        let table_name = to_table_name(entity_name);
+        let table_name = to_snake_case_plural(entity_name);
         DELETE_ENTITY_QUERY
             .replace("{entity_name}", &table_name)
             .replace("{entity_id}", &format!("${}", 1))

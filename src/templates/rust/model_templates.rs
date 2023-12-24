@@ -1,5 +1,4 @@
 use serde_json::Value;
-
 use crate::{models::ddr_req::AttributeType, utils::naming_convention::to_snake_case};
 
 pub static STRUCT_TEMPLATE: &str = r#"

@@ -40,6 +40,6 @@ pub fn to_plural(entity: &str) -> String {
     entity.to_string() + "s"
 }
 
-pub fn to_table_name(camel_case: &str) -> String {
+pub fn to_snake_case_plural(camel_case: &str) -> String {
     to_plural(&to_snake_case(camel_case))
 }

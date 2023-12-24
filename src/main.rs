@@ -25,8 +25,8 @@ fn main() {
     }
     "#;
     let ddr: models::ddr_req::DomainDrivenRequest = serde_json::from_str(test_json).unwrap();
-    let errors = ddr.generate_errors();
-    for error in errors {
-        println!("{}", error);
+    let imports = ddr.generate_imports();
+    for import in imports {
+        println!("{}", import);
     }
 }

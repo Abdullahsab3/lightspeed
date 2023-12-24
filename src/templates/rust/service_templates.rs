@@ -1,4 +1,4 @@
-use crate::utils::naming_convention::{to_snake_case, to_table_name};
+use crate::utils::naming_convention::{to_snake_case, to_snake_case_plural};
 
 pub static VERIFY_ENTITY_CREATION_FN: &str = r##"
 pub async fn verify_{sc_entity_name}_creation_constraints(
@@ -77,7 +77,7 @@ pub trait ServiceGenerator {
 
     fn generate_create_entity_fn(&self, entity_name: &str) -> String {
         let sc_entity_name = to_snake_case(entity_name);
-        let table_name = to_table_name(entity_name);
+        let table_name = to_snake_case_plural(entity_name);
         
         CREATE_ENTITY_FN
             .replace("{sc_entity_name}", &sc_entity_name)
@@ -87,7 +87,7 @@ pub trait ServiceGenerator {
 
     fn generate_update_entity_fn(&self, entity_name: &str) -> String {
         let sc_entity_name = to_snake_case(entity_name);
-        let table_name = to_table_name(entity_name);
+        let table_name = to_snake_case_plural(entity_name);
         
         UPDATE_ENTITY_FN
             .replace("{sc_entity_name}", &sc_entity_name)
@@ -97,7 +97,7 @@ pub trait ServiceGenerator {
 
     fn generate_delete_entity_fn(&self, entity_name: &str) -> String {
         let sc_entity_name = to_snake_case(entity_name);
-        let table_name = to_table_name(entity_name);
+        let table_name = to_snake_case_plural(entity_name);
         
         DELETE_ENTITY_FN
             .replace("{sc_entity_name}", &sc_entity_name)
