@@ -24,22 +24,5 @@ fn main() {
         ]
     }
     "#;
-    let ddr: models::ddr_req::DomainDrivenRequest = serde_json::from_str(test_json).unwrap();
-    let models = ddr.generate_models();
-    for model in models {
-        println!("{}", model);
-    }
-    let tables = ddr.generate_postgres_tables();
-    for table in tables {
-        println!("{}", table);
-    }
-    let controllers = ddr.generate_controllers();
-    for controller in controllers {
-        println!("{}", controller);
-    }
-    let payloads = ddr.generate_payloads();
-    for payload in payloads {
-        println!("{}", payload);
-    }
-    
+    let _: models::ddr_req::DomainDrivenRequest = serde_json::from_str(test_json).unwrap();
 }

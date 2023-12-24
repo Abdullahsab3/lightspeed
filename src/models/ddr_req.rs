@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use strum::EnumProperty;
 
-use crate::templates::{rust::{controller_templates::ControllerGenerator, model_template::ModelGenerator}, postgres::table_templates::PostgresTableGenerator};
+use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator}, postgres::table_templates::PostgresTableGenerator};
 
 
 

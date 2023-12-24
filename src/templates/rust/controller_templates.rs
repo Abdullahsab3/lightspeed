@@ -2,7 +2,7 @@ use serde_json::Value;
 
 use crate::{utils::naming_convention::to_snake_case, models::ddr_req::AttributeType};
 
-use super::model_template::ATTRIBUTE_TEMPLATE;
+use super::model_templates::ATTRIBUTE_TEMPLATE;
 
 pub static CONTROLLER_CREATE_ENTITY_TEMPLATE: &str = r#"
 pub async fn create_{sc_entity_name}(
