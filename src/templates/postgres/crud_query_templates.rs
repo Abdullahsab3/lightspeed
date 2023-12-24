@@ -3,28 +3,29 @@ use serde_json::Value;
 use crate::utils::naming_convention::to_table_name;
 
 pub static CREATE_ENTITY_QUERY: &str = r#"
-INSERT INTO {entity_name}
-    ({entity_fields})
-VALUES
-    ({entity_values})
-RETURNING *;
+            INSERT INTO {entity_name}
+                ({entity_fields})
+            VALUES
+                ({entity_values})
+            RETURNING *;
 "#;
 
 pub static UPDATE_ENTITY_QUERY: &str = r#"
-UPDATE {entity_name}
-SET {entity_fields}
-WHERE id = {entity_id}
-RETURNING *;
+            UPDATE {entity_name}
+            SET 
+                {entity_fields}
+            WHERE id = {entity_id}
+            RETURNING *;‡
 "#;
 
 pub static DELETE_ENTITY_QUERY: &str = r#"
-DELETE FROM {entity_name}
-WHERE id = {entity_id}
-RETURNING *;
+            DELETE FROM {entity_name}
+            WHERE id = {entity_id}
+            RETURNING *;
 "#;
 
 pub trait CrudQueryGenerator {
-    fn generate_create_query(&self, entity_name: &str, entity_description: Value) -> String {
+    fn generate_create_query(&self, entity_name: &str, entity_description: &Value) -> String {
         let table_name = to_table_name(entity_name);
         let mut entity_fields = Vec::new();
         let mut entity_values = Vec::new();
@@ -39,7 +40,7 @@ pub trait CrudQueryGenerator {
             .replace("{entity_fields}", &entity_fields)
             .replace("{entity_values}", &entity_values)
     }
-    fn generate_update_query(&self, entity_name: &str, entity_description: Value) -> String {
+    fn generate_update_query(&self, entity_name: &str, entity_description: &Value) -> String {
         let table_name = to_table_name(entity_name);
         let mut entity_fields = Vec::new();
         for (arg_num, (field_name, _)) in entity_description.as_object().unwrap().iter().enumerate() {

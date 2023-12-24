@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use strum::EnumProperty;
 
-use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}};
+use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}};
 
 
 
@@ -17,7 +17,7 @@ impl DomainDrivenRequest {
         let mut models = Vec::new();
         // extract entities in key value pairs
         for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
-            let model = self.generate_struct(entity_name.to_string(), entity_description.clone());
+            let model = self.generate_struct(&entity_name.to_string(), entity_description.clone());
             models.push(model);
         }
         models
@@ -37,7 +37,7 @@ impl DomainDrivenRequest {
         let mut controllers = Vec::new();
         // extract entities in key value pairs
         for(entity_name, _) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
-            let controller = self.generate_create_fn(&entity_name.to_string());
+            let controller = ControllerGenerator::generate_create_fn(self, &entity_name.to_string());
             controllers.push(controller);
         }
         controllers
@@ -60,8 +60,8 @@ impl DomainDrivenRequest {
         let mut queries = Vec::new();
         // extract entities in key value pairs
         for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
-            let create_query = self.generate_create_query(&entity_name.to_string(), entity_description.clone());
-            let update_query = self.generate_update_query(&entity_name.to_string(), entity_description.clone());
+            let create_query = self.generate_create_query(&entity_name.to_string(), &entity_description);
+            let update_query = self.generate_update_query(&entity_name.to_string(), &entity_description);
             let delete_query = self.generate_delete_query(&entity_name.to_string());
             
             queries.push(create_query);
@@ -71,12 +71,25 @@ impl DomainDrivenRequest {
         queries
     }
 
+    pub fn generate_sources(&self) -> Vec<String> {
+        let mut sources = Vec::new();
+        // extract entities in key value pairs
+        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+            let create_fn = SourceGenerator::generate_create_fn(self, &entity_name.to_string(), entity_description);
+            
+            sources.push(create_fn);
+        }
+        sources
+    }
+    
+
 }
 
 impl ModelGenerator for DomainDrivenRequest {}
 impl PostgresTableGenerator for DomainDrivenRequest {}
 impl ControllerGenerator for DomainDrivenRequest {}
 impl CrudQueryGenerator for DomainDrivenRequest {}
+impl SourceGenerator for DomainDrivenRequest {}
 
 
 pub enum AttributeType {
