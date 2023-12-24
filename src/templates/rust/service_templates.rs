@@ -1,6 +1,6 @@
 use crate::utils::naming_convention::{to_snake_case, to_snake_case_plural, to_plural};
 
-use super::import_templates::ImportGenerator;
+use super::{import_templates::ImportGenerator, model_templates::ATTRIBUTE_TEMPLATE};
 
 pub static VERIFY_ENTITY_CREATION_FN: &str = r##"
     pub async fn verify_{sc_entity_name}_creation_constraints(
@@ -97,6 +97,12 @@ impl {entity_plural}Service {
 }
 "#;
 
+pub static SERVICES_STATE_TEMPLATE: &str = r#"
+pub struct ServicesState {
+    {services_as_fields}
+}
+"#;
+
 
 pub trait ServiceGenerator: ImportGenerator {
 
@@ -178,5 +184,22 @@ pub trait ServiceGenerator: ImportGenerator {
             .replace("{entity_plural}", &to_plural(entity_name))
             .replace("{sc_entity_plural}", &to_snake_case_plural(entity_name))
             .replace("{service_functions}", &service_functions)
+    }
+
+    fn generate_services_state(&self, entity_names: Vec<String>) -> String {
+        let services_as_fields = entity_names
+            .iter()
+            .map(|entity_name| {
+                let service_key = to_snake_case_plural(entity_name) + "_service";
+                let service_value = to_plural(entity_name) + "Service";
+                ATTRIBUTE_TEMPLATE
+                    .replace("{attribute_name}", &service_key)
+                    .replace("{attribute_type}", &service_value)
+            })
+            .collect::<Vec<String>>()
+            .join(",\n");
+
+        SERVICES_STATE_TEMPLATE
+            .replace("{services_as_fields}", &services_as_fields)
     }
 }
