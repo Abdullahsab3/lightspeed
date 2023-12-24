@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::templates::{rust::{ATTRIBUTE_TEMPLATE, STRUCT_TEMPLATE}, postgres::PostgresTableGenerator};
+use crate::templates::{rust::{ATTRIBUTE_TEMPLATE, STRUCT_TEMPLATE, ControllerGenerator}, postgres::PostgresTableGenerator};
 
 
 #[derive(Serialize, Deserialize)]
@@ -33,10 +33,22 @@ impl DomainDrivenRequest {
         tables
     }
 
+    pub fn generate_controllers(&self) -> Vec<String> {
+        let mut controllers = Vec::new();
+        // extract entities in key value pairs
+        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+            println!("{}: {}", entity_name, entity_description);
+            let controller = self.generate_create_fn(&entity_name.to_string());
+            controllers.push(controller);
+        }
+        controllers
+    }
+
 }
 
 impl ModelGenerator for DomainDrivenRequest {}
 impl PostgresTableGenerator for DomainDrivenRequest {}
+impl ControllerGenerator for DomainDrivenRequest {}
 
 pub trait ModelGenerator {
     fn generate_struct(&self, name: String, value: Value) -> String {

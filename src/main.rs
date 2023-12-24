@@ -1,5 +1,6 @@
 pub mod models;
 pub mod templates;
+pub mod utils;
 
 fn main() {
     let test_json = r#"
@@ -31,6 +32,10 @@ fn main() {
     let tables = ddr.generate_postgres_tables();
     for table in tables {
         println!("{}", table);
+    }
+    let controllers = ddr.generate_controllers();
+    for controller in controllers {
+        println!("{}", controller);
     }
     
 }
