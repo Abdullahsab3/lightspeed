@@ -112,6 +112,7 @@ impl DomainDrivenRequest {
         // extract entities in key value pairs
         errors.push(ErrorGenerator::generate_server_error_enums(self, self.get_entity_names()));
         errors.push(ErrorGenerator::generate_client_error_enums(self, self.get_entity_names()));
+        errors.push(ErrorGenerator::generate_error_impl(self, self.get_entity_names()));
         errors
     }
     
