@@ -42,6 +42,25 @@ pub async fn update_{sc_entity_name}(
 }
 "##;
 
+pub static DELETE_ENTITY_FN: &str = r##"
+pub async fn delete_{sc_entity_name}(
+    &self,
+    {sc_entity_name}_id: i32
+) -> Result<(), sqlx::Error> {
+    let mut transaction = self.pool.begin().await?;
+    sqlx::query_as!(
+        {entity_name},
+        r#"{delete_query}
+        "#,
+        {sc_entity_name}_id
+    )
+    .execute(&mut transaction)
+    .await?;
+    transaction.commit().await?;
+    Ok(())
+}
+"##;
+
 pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator {
     fn generate_create_fn(&self, entity_name: &str, entity: &Value) -> String {
         let sc_entity_name = to_snake_case(entity_name);
@@ -64,4 +83,14 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator {
             .replace("{update_query}", &update_query)
             .replace("{entity_values}", &entity_values)
     }
+
+    fn generate_delete_fn(&self, entity_name: &str) -> String {
+        let sc_entity_name = to_snake_case(entity_name);
+        let delete_query = self.generate_delete_query(entity_name);
+        DELETE_ENTITY_FN
+            .replace("{sc_entity_name}", &sc_entity_name)
+            .replace("{entity_name}", &entity_name)
+            .replace("{delete_query}", &delete_query)
+    }
+    
 }

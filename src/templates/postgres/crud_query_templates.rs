@@ -20,8 +20,7 @@ pub static UPDATE_ENTITY_QUERY: &str = r#"
 
 pub static DELETE_ENTITY_QUERY: &str = r#"
             DELETE FROM {entity_name}
-            WHERE id = {entity_id}
-            RETURNING *;
+            WHERE id = {entity_id};
 "#;
 
 pub trait CrudQueryGenerator {

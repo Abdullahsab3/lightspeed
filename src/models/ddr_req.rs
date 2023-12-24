@@ -77,8 +77,10 @@ impl DomainDrivenRequest {
         for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
             let create_fn = SourceGenerator::generate_create_fn(self, &entity_name.to_string(), entity_description);
             let update_fn = SourceGenerator::generate_update_fn(self, &entity_name.to_string(), entity_description);
+            let delete_fn = SourceGenerator::generate_delete_fn(self, &entity_name.to_string());
             sources.push(create_fn);
             sources.push(update_fn);
+            sources.push(delete_fn);
         }
         sources
     }
