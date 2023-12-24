@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use strum::EnumProperty;
 
-use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator, service_templates::ServiceGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}};
+use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator, service_templates::ServiceGenerator, axum_routes_template::AxumRoutesGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}};
 
 
 
@@ -98,6 +98,16 @@ impl DomainDrivenRequest {
         }
         services
     }
+
+    pub fn generate_axum_routes(&self) -> String {
+        let mut axum_routes = String::new();
+        // extract entities in key value pairs
+        for(entity_name, _) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+            let entity_routes = AxumRoutesGenerator::generate_axum_routes(self, entity_name.to_string());
+            axum_routes.push_str(&entity_routes);
+        }
+        axum_routes
+    }
     
 
 }
@@ -108,6 +118,7 @@ impl ControllerGenerator for DomainDrivenRequest {}
 impl CrudQueryGenerator for DomainDrivenRequest {}
 impl SourceGenerator for DomainDrivenRequest {}
 impl ServiceGenerator for DomainDrivenRequest {}
+impl AxumRoutesGenerator for DomainDrivenRequest {}
 
 
 pub enum AttributeType {

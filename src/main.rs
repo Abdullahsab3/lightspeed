@@ -25,8 +25,6 @@ fn main() {
     }
     "#;
     let ddr: models::ddr_req::DomainDrivenRequest = serde_json::from_str(test_json).unwrap();
-    let services = ddr.generate_services();
-    for service in services {
-        println!("{}", service);
-    }
+    let routes = ddr.generate_axum_routes();
+    println!("{}", routes);
 }
