@@ -33,16 +33,6 @@ impl DomainDrivenRequest {
         tables
     }
 
-    pub fn generate_controllers(&self) -> Vec<String> {
-        let mut controllers = Vec::new();
-        // extract entities in key value pairs
-        for(entity_name, _) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
-            let controller = ControllerGenerator::generate_create_fn(self, &entity_name.to_string());
-            controllers.push(controller);
-        }
-        controllers
-    }
-
     pub fn generate_payloads(&self) -> Vec<String> {
         let mut payloads = Vec::new();
         // extract entities in key value pairs
@@ -130,6 +120,16 @@ impl DomainDrivenRequest {
             imports.push(controller_import);
         }
         imports
+    }
+
+    pub fn generate_controllers(&self) -> Vec<String> {
+        let mut controller = Vec::new();
+        // extract entities in key value pairs
+        for(entity_name, entity_value) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+            let controller_fn = ControllerGenerator::generate_controller(self, &entity_name.to_string(), entity_value.clone());
+            controller.push(controller_fn);
+        }
+        controller
     }
     
 
