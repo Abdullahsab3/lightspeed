@@ -9,21 +9,24 @@ pub type RawEntity = Value;
 pub type AttributeName = String;
 pub type EntityName = String;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ForeginKey {
     pub entity_name: String,
     pub attribute_name: String,
 }
 
 impl ForeginKey {
-    pub fn from_str(foreign_reference: &str) -> Self {
+    pub fn from_str(foreign_reference: &str) -> Option<Self> {
         let foreign_reference = foreign_reference.split(".").collect::<Vec<&str>>();
+        if foreign_reference.len() != 2 {
+            return None;
+        }
         let entity_name = foreign_reference[0].to_string();
         let attribute_name = foreign_reference[1].to_string();
-        ForeginKey {
+        Some(ForeginKey {
             entity_name,
             attribute_name,
-        }
+        })
     
     }
 }
@@ -31,6 +34,7 @@ impl ForeginKey {
 pub type FilterBy = Vec<AttributeName>;
 pub type UniqueAttributes = Vec<AttributeName>;
 
+#[derive(Debug)]
 pub struct Entity {
     pub name: String,
     pub attributes: Vec<(AttributeName, AttributeType)>,
@@ -43,9 +47,12 @@ pub struct Entity {
 impl From<(EntityName, RawEntity, RawEntities)> for Entity {
     fn from((entity_name, raw_entity, raw_entities): (EntityName, RawEntity, RawEntities)) -> Self {
         let mut attributes = raw_entity.as_object().unwrap().iter().map(|(attribute_name, attribute_type)| {
-            let attribute_type = AttributeType::from_str(attribute_type.as_str().unwrap());
+            let str_attribute_type = attribute_type.as_str().unwrap_or("Unknown");
+            let attribute_type = AttributeType::from_str(str_attribute_type);
             (attribute_name.to_string(), attribute_type)
         }).collect::<Vec<(AttributeName, AttributeType)>>();
+        
+        let mut unknown_attributes = Vec::new();
 
         let mut foreign_keys = Vec::new();
 
@@ -53,15 +60,27 @@ impl From<(EntityName, RawEntity, RawEntities)> for Entity {
             match &attribute.1 {
                 AttributeType::Unknown(raw_attr_type) => {
                     let foreign_key_ref = ForeginKey::from_str(&raw_attr_type);
-                    let foreign_key_entity = raw_entities.get(&foreign_key_ref.entity_name).unwrap();
-                    let foreign_key_attribute_type = foreign_key_entity.get(&foreign_key_ref.attribute_name).unwrap();
-                    let foreign_key_attribute_type = AttributeType::from_str(foreign_key_attribute_type.as_str().unwrap());
-                    attribute.1 = foreign_key_attribute_type;
-                    foreign_keys.push(foreign_key_ref);
+                    match foreign_key_ref {
+                        Some(foreign_key_ref) => {
+                            let foreign_key_entity = raw_entities.as_array().unwrap().iter().find(|entity| {
+                                entity.as_object().unwrap().contains_key(&foreign_key_ref.entity_name)
+                            }).unwrap().as_object().unwrap().get(&foreign_key_ref.entity_name).unwrap().as_object().unwrap();
+                            let foreign_key_attribute_type = foreign_key_entity.get(&foreign_key_ref.attribute_name).unwrap();
+                            let foreign_key_attribute_type = AttributeType::from_str(foreign_key_attribute_type.as_str().unwrap());
+                            attribute.1 = foreign_key_attribute_type;
+                            foreign_keys.push(foreign_key_ref);
+                        },
+                        None => {
+                            unknown_attributes.push(attribute.0.clone());
+                        }
+                    }
+
                 }
                 _ => {}
             }
         }
+
+        let attributes = attributes.into_iter().filter(|attribute| !unknown_attributes.contains(&attribute.0)).collect::<Vec<(AttributeName, AttributeType)>>();
 
         let primary_key = raw_entity.get("primary_key").map(|primary_key| primary_key.as_str().unwrap().to_string()).or(Some("id".to_string()));
 

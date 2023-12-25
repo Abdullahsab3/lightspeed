@@ -4,6 +4,8 @@ use strum::EnumProperty;
 
 use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator, service_templates::ServiceGenerator, axum_routes_templates::AxumRoutesGenerator, error_templates::ErrorGenerator, import_templates::ImportGenerator, project_config_templates::ProjectConfigGenerator, mod_template::ModGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator, database_template::DatabaseGenerator}, docker::docker_compose::DockerComposeGenerator};
 
+use super::entity::Entity;
+
 
 
 #[derive(Serialize, Deserialize)]
@@ -13,6 +15,15 @@ pub struct DomainDrivenRequest {
 }
 
 impl DomainDrivenRequest {
+    pub fn generate_entities(&self) -> Vec<Entity> {
+        let mut entities = Vec::new();
+        // extract entities in key value pairs
+        for(entity_name, entity_description) in self.get_entity_names_and_values()  {
+            let entity = Entity::from((entity_name.to_string(), entity_description.clone(), self.entities.clone()));
+            entities.push(entity);
+        }
+        entities
+    }
     pub fn generate_models(&self) -> Vec<(String, String)> {
         let mut models = Vec::new();
         // extract entities in key value pairs
@@ -201,6 +212,7 @@ impl ProjectConfigGenerator for DomainDrivenRequest {}
 impl DatabaseGenerator for DomainDrivenRequest {}
 impl ModGenerator for DomainDrivenRequest {}
 
+#[derive(PartialEq, Debug)]
 pub enum AttributeType {
     String,
     Uuid,

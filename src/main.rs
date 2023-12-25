@@ -9,29 +9,40 @@ fn main() {
     
     let test_json = r#"
     {
-        "service_name": "test",
+        "service_name": "MyService",
         "entities": [
             {
-                "Person": {
+                "User" : 
+                {
                     "id": "Uuid",
-                    "name": "String",
-                    "age": "Option<i32>",
-                    "height": "f32",
-                    "is_cool": "bool"
-                },
-                "Car": {
+                    "name" : "String",
+                    "surname": "String",
+                    "age": "Int",
+                    "email": "String",
+                    "primary_key": "id",
+                    "filter_by": ["name", "age", ["name", "surname"]] ,
+                    "unique_attributes": ["email"]
+                }
+            },
+            {
+                "Car" : 
+                {
                     "id": "Uuid",
-                    "make": "String",
-                    "model": "String",
-                    "year": "i32",
-                    "is_fast": "bool"
+                    "name" : "String",
+                    "brand": "String",
+                    "price": "Int",
+                    "ownedBy": "User.id",
+                    "primary_key": "id",
+                    "filter_by": ["name", "brand"]
                 }
             }
         ]
     }
     "#;
     let ddr: models::ddr_req::DomainDrivenRequest = serde_json::from_str(test_json).unwrap();
-    let rust_microservice_generator = RustMicroserviceGeneratorImpl {};
-    rust_microservice_generator.generate_rust_microservice(ddr, "/Users/abdullahsabaaallil/test/generated_microservice").unwrap();
+    let entities: Vec<models::entity::Entity> = ddr.generate_entities();
+    for entitiy in entities {
+        println!("{:#?}", entitiy);
+    }
     
 }
