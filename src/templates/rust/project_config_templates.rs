@@ -1,4 +1,4 @@
-use crate::utils::naming_convention::{kebab_to_snake_case, to_snake_case};
+use crate::utils::naming_convention::to_snake_case;
 
 pub static CARGO_TOML_PACKAGE_TEMPLATE: &str = r#"
 [package]

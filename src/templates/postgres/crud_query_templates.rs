@@ -12,13 +12,13 @@ pub static UPDATE_ENTITY_QUERY: &str = r#"
             UPDATE {entity_name}
             SET 
                 {entity_fields}
-            WHERE id = {entity_id}
+            WHERE {primary_key} = {entity_id}
             RETURNING *;
 "#;
 
 pub static DELETE_ENTITY_QUERY: &str = r#"
             DELETE FROM {entity_name}
-            WHERE id = {entity_id};
+            WHERE {primary_key} = {entity_id};
 "#;
 
 pub trait CrudQueryGenerator {
@@ -47,12 +47,14 @@ pub trait CrudQueryGenerator {
         UPDATE_ENTITY_QUERY
             .replace("{entity_name}", &table_name)
             .replace("{entity_fields}", &entity_fields)
+            .replace("{primary_key}", &entity.primary_key)
             .replace("{entity_id}", &format!("${}", entity.attributes.len() + 1))
     }
-    fn generate_delete_query(&self, entity_name: &str) -> String {
-        let table_name = to_snake_case_plural(entity_name);
+    fn generate_delete_query(&self, entity: &Entity) -> String {
+        let table_name = to_snake_case_plural(&entity.name);
         DELETE_ENTITY_QUERY
             .replace("{entity_name}", &table_name)
+            .replace("{primary_key}", &&entity.primary_key)
             .replace("{entity_id}", &format!("${}", 1))
     }
 }

@@ -96,7 +96,8 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
     fn generate_update_fn(&self, entity: &Entity) -> String {
         let sc_entity_name = to_snake_case(&entity.name);
         let update_query = self.generate_update_query(entity);
-        let entity_values = self.generate_entity_value_accessors(entity);
+        let entity_values = self.generate_entity_value_accessors(entity) + &format!("{}.{}, ", to_snake_case(&entity.name), entity.primary_key);
+        
         UPDATE_ENTITY_FN
             .replace("{sc_entity_name}", &sc_entity_name)
             .replace("{entity_name}", &entity.name)
@@ -106,7 +107,7 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
 
     fn generate_delete_fn(&self, entity: &Entity) -> String {
         let sc_entity_name = to_snake_case(&entity.name);
-        let delete_query = self.generate_delete_query(&entity.name);
+        let delete_query = self.generate_delete_query(&entity);
         DELETE_ENTITY_FN
             .replace("{sc_entity_name}", &sc_entity_name)
             .replace("{entity_name}", &entity.name)

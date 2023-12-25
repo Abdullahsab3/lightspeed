@@ -33,7 +33,7 @@ fn main() {
                     "name" : "String",
                     "brand": "String",
                     "price": "Int",
-                    "ownedBy": "User.id",
+                    "owned_by": "User.id",
                     "primary_key": "id",
                     "filter_by": ["name", "brand"]
                 }
