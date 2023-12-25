@@ -103,12 +103,12 @@ impl DomainDrivenRequest {
         service
     }
 
-    pub fn generate_sources(&self) -> Vec<String> {
+    pub fn generate_sources(&self) -> Vec<(String, String)> {
         let mut sources = Vec::new();
         // extract entities in key value pairs
-        for (entity_name, entity_value) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+        for (entity_name, entity_value) in self.get_entity_names_and_values() {
             let source_file = SourceGenerator::generate_source(self, &entity_name.to_string(), &entity_value.clone());
-            sources.push(source_file);
+            sources.push((entity_name, source_file));
         }
         sources
     }
@@ -170,6 +170,17 @@ impl DomainDrivenRequest {
             service_mods.push_str(service_mod.as_str());
         }
         service_mods
+    }
+
+    pub fn generate_source_mods(&self) -> String {
+        let mut source_mods = String::new();
+        // extract entities in key value pairs
+        for entity_name in self.get_entity_names()  {
+            let source_mod = ModGenerator::generate_source_mod(self, &entity_name.to_string());
+            source_mods.push_str(source_mod.as_str());
+        }
+        source_mods
+    
     }
     
     

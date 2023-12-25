@@ -5,11 +5,11 @@ pub static CARGO_TOML_PACKAGE_TEMPLATE: &str = r#"
 name = "{service_name}"
 version = "0.1.0"
 edition = "2021"
-default-run = "{service_name}
+default-run = "{service_name}"
 "#;
 
 pub static CARGO_TOML_BIN_TEMPLATE: &str = r#"
-[bin]
+[[bin]]
 name = "{service_name}"
 path = "src/main.rs"
 "#;

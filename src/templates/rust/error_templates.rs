@@ -35,6 +35,7 @@ impl Error {
         match self {
             {error_to_client_errors}
         }
+    }
 }
 "#;
 
@@ -71,22 +72,22 @@ pub trait ErrorGenerator : ModelGenerator {
         for entity_name in entity_names {
             let usc_entity_name = to_upper_snake_case(&entity_name);
             error_to_client_errors.push_str(&ERROR_TO_CLIENT_ERROR_EXIST_TEMPLATE
-                .replace("{entity_name}", &ENTITY_ALREADY_EXISTS_ERROR_TEMPLATE.replace("{entity_name}", &entity_name))
+                .replace("{entity_name}", &entity_name)
                 .replace("{usc_entity_name}", &usc_entity_name));
             error_to_client_errors.push_str(&ERROR_TO_CLIENT_ERROR_CREATION_TEMPLATE
-                .replace("{entity_name}", &ENTITY_CREATION_ERROR_TEMPLATE.replace("{entity_name}", &entity_name))
+                .replace("{entity_name}", &entity_name)
                 .replace("{usc_entity_name}", &usc_entity_name));
             error_to_client_errors.push_str(&ERROR_TO_CLIENT_ERROR_DOES_NOT_EXIST_TEMPLATE
-                .replace("{entity_name}", &ENTITY_DOES_NOT_EXIST_ERROR_TEMPLATE.replace("{entity_name}", &entity_name))
+                .replace("{entity_name}", &entity_name)
                 .replace("{usc_entity_name}", &usc_entity_name));
             error_to_client_errors.push_str(&ERROR_TO_CLIENT_ERROR_UPDATE_TEMPLATE
-                .replace("{entity_name}", &ENTITY_UPDATE_ERROR_TEMPLATE.replace("{entity_name}", &entity_name))
+                .replace("{entity_name}", &entity_name)
                 .replace("{usc_entity_name}", &usc_entity_name));
             error_to_client_errors.push_str(&ERROR_TO_CLIENT_ERROR_DELETION_TEMPLATE
-                .replace("{entity_name}", &ENTITY_DELETION_ERROR_TEMPLATE.replace("{entity_name}", &entity_name))
+                .replace("{entity_name}", &entity_name)
                 .replace("{usc_entity_name}", &usc_entity_name));
             error_to_client_errors.push_str(&ERROR_TO_CLIENT_ERROR_FETCH_TEMPLATE
-                .replace("{entity_name}", &ENTITY_FETCH_ERROR_TEMPLATE.replace("{entity_name}", &entity_name))
+                .replace("{entity_name}", &entity_name)
                 .replace("{usc_entity_name}", &usc_entity_name));
         }
         ERROR_IMPL_TEMPLATE.replace("{error_to_client_errors}", &error_to_client_errors)

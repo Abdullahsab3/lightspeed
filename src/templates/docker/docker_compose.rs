@@ -16,7 +16,7 @@ pub static DATABASE_CONTAINER_TEMPLATE: &str = r#"
         - {service_name}-network
         volumes:
             - "{service_name}-data:/var/lib/postgresql/data"
-            -"./docker/postgres/01.sql:/docker-entrypoint-initdb.d/01_db.sql"
+            - "./docker/postgres/01.sql:/docker-entrypoint-initdb.d/01_db.sql"
 "#;
 
 pub static NETWORK_TEMPLATE: &str = r#"

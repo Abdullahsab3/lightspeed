@@ -12,10 +12,14 @@ pub static CONTROLLERS_DIR: &str = "src/controllers";
 pub static MODELS_DIR: &str = "src/models";
 pub static HTTP_PATH: &str = "src/http/mod.rs";
 pub static SERVICES_DIR: &str = "src/services";
+pub static SOURCES_DIR: &str = "src/sources";
 pub static DATABASE_CONFIG_PATH: &str = "docker/postgres/01.sql";
 pub static MIGRATIONS_DIR: &str = "migrations";
 pub static STATIC_TEMPLATES_DIR: &str = "./static_templates";
 pub static RUST_STATIC_TEMPLATE_DIR: &str = "/rust/microservice";
+pub static LIB_STATIC_TEMPLATE_PATH: &str = "src/lib.rs";
+pub static LOG_REQUEST_TEMPLATE_PATH: &str = "src/log_request.rs";
+pub static MAIN_TEMPLATE_PATH: &str = "src/main.rs";
 
 pub trait RustMicroserviceGenerator: FileGenerator {
     fn generate_rust_microservice(&self, domain_driven_request: DomainDrivenRequest, out_dir: &str) -> io::Result<()>;
@@ -103,10 +107,23 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
         }
 
         /*
+         * Generate sources
+         */
+        let sources_mods_dynamic_template = domain_driven_request.generate_source_mods();
+        self.generate_file(String::new(), sources_mods_dynamic_template, &format!("{}/{}/mod.rs", out_dir, SOURCES_DIR))?;
+        let sources_dynamic_templates = domain_driven_request.generate_sources();
+        for (entity_name, source) in sources_dynamic_templates {
+            let source_path = format!("{}_table.rs", to_snake_case(&entity_name));
+            self.generate_file(String::new(), source, &format!("{}/{}/{}", out_dir, SOURCES_DIR, source_path))?;
+        }
+
+        /*
          * Generate errors
          */
+        let errors_static_template_path = rust_static_template_path.join("src/error.rs");
+        let errors_static_template = std::fs::read_to_string(errors_static_template_path)?;
         let errors_dynamic_template = domain_driven_request.generate_error();
-        self.generate_file(String::new(), errors_dynamic_template, &format!("{}/src/errors.rs", out_dir))?;
+        self.generate_file(errors_static_template, errors_dynamic_template, &format!("{}/src/error.rs", out_dir))?;
 
         /*
          * Generate Docker compose
@@ -114,8 +131,29 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
         let docker_compose_dynamic_template = domain_driven_request.generate_docker_compose();
         self.generate_file(String::new(), docker_compose_dynamic_template, &format!("{}/docker-compose.yml", out_dir))?;
         
-        Ok(())
+        /*
+         * Generate lib.rs
+         */
+        let lib_static_template_path = rust_static_template_path.join(LIB_STATIC_TEMPLATE_PATH);
+        let lib_static_template = std::fs::read_to_string(lib_static_template_path)?;
+        self.generate_file(lib_static_template, String::new(), &format!("{}/{}", out_dir, LIB_STATIC_TEMPLATE_PATH))?;
 
+
+        /*
+         * Generate log_request.rs
+         */
+        let log_request_static_template_path = rust_static_template_path.join(LOG_REQUEST_TEMPLATE_PATH);
+        let log_request_static_template = std::fs::read_to_string(log_request_static_template_path)?;
+        self.generate_file(log_request_static_template, String::new(), &format!("{}/{}", out_dir, LOG_REQUEST_TEMPLATE_PATH))?;
+
+        /*
+         * Generate main.rs
+         */
+        let main_static_template_path = rust_static_template_path.join(MAIN_TEMPLATE_PATH);
+        let main_static_template = std::fs::read_to_string(main_static_template_path)?;
+        self.generate_file(main_static_template, String::new(), &format!("{}/{}", out_dir, MAIN_TEMPLATE_PATH))?;
+
+        Ok(())
     }
 
 

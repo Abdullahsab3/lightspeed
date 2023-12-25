@@ -30,6 +30,6 @@ fn main() {
     "#;
     let ddr: models::ddr_req::DomainDrivenRequest = serde_json::from_str(test_json).unwrap();
     let rust_microservice_generator = RustMicroserviceGeneratorImpl {};
-    rust_microservice_generator.generate_rust_microservice(ddr, "./test").unwrap();
+    rust_microservice_generator.generate_rust_microservice(ddr, "/Users/abdullahsabaaallil/test/generated_microservice").unwrap();
     
 }
