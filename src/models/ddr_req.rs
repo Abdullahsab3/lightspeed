@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use strum::EnumProperty;
 
-use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator, service_templates::ServiceGenerator, axum_routes_templates::AxumRoutesGenerator, error_templates::ErrorGenerator, import_templates::ImportGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}};
+use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator, service_templates::ServiceGenerator, axum_routes_templates::AxumRoutesGenerator, error_templates::ErrorGenerator, import_templates::ImportGenerator, project_config_templates::ProjectConfigGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}, docker::docker_compose::DockerComposeGenerator};
 
 
 
@@ -123,6 +123,14 @@ impl DomainDrivenRequest {
         }
         sources
     }
+
+    pub fn generate_docker_compose(&self) -> String {
+        DockerComposeGenerator::generate_docker_compose(self, &self.service_name)
+    }
+
+    pub fn generate_project_config(&self) -> String {
+        ProjectConfigGenerator::generate_config_toml(self, &self.service_name)
+    }
     
 }
 
@@ -135,7 +143,8 @@ impl ServiceGenerator for DomainDrivenRequest {}
 impl AxumRoutesGenerator for DomainDrivenRequest {}
 impl ErrorGenerator for DomainDrivenRequest {}
 impl ImportGenerator for DomainDrivenRequest {}
-
+impl DockerComposeGenerator for DomainDrivenRequest {}
+impl ProjectConfigGenerator for DomainDrivenRequest {}
 
 pub enum AttributeType {
     String,
