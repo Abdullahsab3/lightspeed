@@ -1,4 +1,4 @@
-use project_generators::rust::RustMicroserviceGeneratorImpl;
+use project_generators::rust::{RustMicroserviceGeneratorImpl, RustMicroserviceGenerator};
 
 pub mod models;
 pub mod templates;
@@ -6,6 +6,7 @@ pub mod utils;
 pub mod project_generators;
 
 fn main() {
+    
     let test_json = r#"
     {
         "service_name": "test",
@@ -28,6 +29,7 @@ fn main() {
     }
     "#;
     let ddr: models::ddr_req::DomainDrivenRequest = serde_json::from_str(test_json).unwrap();
-    let rust_reactive_microservice_generator = RustMicroserviceGeneratorImpl {};
+    let rust_microservice_generator = RustMicroserviceGeneratorImpl {};
+    rust_microservice_generator.generate_rust_microservice(ddr, "./test").unwrap();
     
 }

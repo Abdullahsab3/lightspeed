@@ -1,4 +1,4 @@
-use std::{path::Path, io};
+use std::{path::Path, io, fs};
 
 use chrono::Utc;
 
@@ -26,6 +26,7 @@ impl FileGenerator for RustMicroserviceGeneratorImpl {}
 
 impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
     fn generate_rust_microservice(&self, domain_driven_request: DomainDrivenRequest, out_dir: &str) -> io::Result<()> {
+        fs::create_dir_all(out_dir)?;
         let rust_static_template_dir = format!("{}{}", STATIC_TEMPLATES_DIR, RUST_STATIC_TEMPLATE_DIR);
         let rust_static_template_path = Path::new(&rust_static_template_dir);
 
@@ -40,10 +41,9 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
         /*
          * Generate config.toml
          */
-        let config_toml_static_template_path = rust_static_template_path.join(CONFIG_TOML_PATH);
-        let config_toml_static_template = std::fs::read_to_string(config_toml_static_template_path)?;
+        //let config_toml_static_template_path = rust_static_template_path.join(CONFIG_TOML_PATH);
         let config_toml_dynamic_template = domain_driven_request.generate_environment_definitions();
-        self.generate_file(config_toml_static_template, config_toml_dynamic_template, &format!("{}/{}", out_dir, CONFIG_TOML_PATH))?;
+        self.generate_file(String::new(), config_toml_dynamic_template, &format!("{}/{}", out_dir, CONFIG_TOML_PATH))?;
 
         /*
          * Generate database config
