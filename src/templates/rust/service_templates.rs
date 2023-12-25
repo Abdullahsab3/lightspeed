@@ -228,7 +228,7 @@ pub trait ServiceGenerator: ImportGenerator {
             .replace("{entity_plural}", &entity_plural)
     }
 
-    fn generate_create_service_fn(&self, entity_names: Vec<String>) -> String {
+    fn generate_create_services_fn(&self, entity_names: Vec<String>) -> String {
         let service_definitions = entity_names
             .iter()
             .map(|entity_name| self.generate_service_definition(entity_name))

@@ -8,10 +8,10 @@ use super::file_generator::FileGenerator;
 
 pub static CONFIG_TOML_PATH: &str = ".cargo/config.toml";
 pub static CARGO_TOML_PATH: &str = "Cargo.toml";
-pub static SOURCE_DIR: &str = "src";
-pub static CONTROLLERS_DIR: &str = "controllers";
-pub static MODELS_DIR: &str = "models";
-pub static SERVICES_DIR: &str = "services";
+pub static CONTROLLERS_DIR: &str = "src/controllers";
+pub static MODELS_DIR: &str = "src/models";
+pub static HTTP_PATH: &str = "src/http/mod.rs";
+pub static SERVICES_DIR: &str = "src/services";
 pub static DATABASE_CONFIG_PATH: &str = "docker/postgres/01.sql";
 pub static MIGRATIONS_DIR: &str = "migrations";
 pub static STATIC_TEMPLATES_DIR: &str = "./static_templates";
@@ -64,6 +64,22 @@ pub trait RustMicroserviceGenerator: FileGenerator {
             let controller_path = format!("{}_controller.rs", to_snake_case_plural(&entity_name));
             self.generate_file(String::new(), controller, &format!("{}/{}/{}", out_dir, CONTROLLERS_DIR, controller_path))?;
         }
+
+        /*
+         * Generate http
+         */
+        let http_static_template = rust_static_template_path.join(HTTP_PATH);
+        let http_static_template = std::fs::read_to_string(http_static_template)?;
+        let http_dynamic_template = domain_driven_request.generate_http();
+        self.generate_file(http_static_template, http_dynamic_template, &format!("{}/{}", out_dir, HTTP_PATH))?;
+
+        /*
+         * Generate models
+         */
+        
+
+
+        
 
 
         Ok(())

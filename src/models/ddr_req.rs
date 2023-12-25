@@ -131,6 +131,12 @@ impl DomainDrivenRequest {
         DatabaseGenerator::generate_database_create(self, self.service_name.as_str()).as_str()
     }
 
+    pub fn generate_http(&self) -> String {
+        self.generate_create_services_fn(self.get_entity_names())
+
+
+    }
+
     pub fn generate_controller_mods(&self) -> String {
         let mut controller_mods = String::new();
         // extract entities in key value pairs
