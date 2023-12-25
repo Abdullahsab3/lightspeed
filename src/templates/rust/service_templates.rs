@@ -103,6 +103,23 @@ pub struct ServicesState {
 }
 "#;
 
+pub static CREATE_SERVICES_FN_TEMPLATE: &str = r#"
+
+pub async fn create_services(
+    pool: PgPool,
+) -> Result<ServicesState> {
+    let arc_pool = Arc::new(pool);
+    {service_definitions}
+    Ok(ServicesState {
+        {services_as_fields}
+    })
+}
+"#;
+
+pub static SERVICE_DEFINITION: &str = r#"
+let {sc_entity_plural}_service = {entity_plural}Service::new(&arc_pool);
+"#;
+
 
 pub trait ServiceGenerator: ImportGenerator {
 
@@ -201,5 +218,32 @@ pub trait ServiceGenerator: ImportGenerator {
 
         SERVICES_STATE_TEMPLATE
             .replace("{services_as_fields}", &services_as_fields)
+    }
+
+    fn generate_service_definition(&self, entity_name: &str) -> String {
+        let sc_entity_plural = to_snake_case_plural(entity_name);
+        let entity_plural = to_plural(entity_name);
+        SERVICE_DEFINITION
+            .replace("{sc_entity_plural}", &sc_entity_plural)
+            .replace("{entity_plural}", &entity_plural)
+    }
+
+    fn generate_create_service_fn(&self, entity_names: Vec<String>) -> String {
+        let service_definitions = entity_names
+            .iter()
+            .map(|entity_name| self.generate_service_definition(entity_name))
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        let service_names = entity_names
+            .iter()
+            .map(|entity_name| to_snake_case_plural(entity_name) + "_service")
+            .collect::<Vec<String>>()
+            .join(",\n");
+
+        CREATE_SERVICES_FN_TEMPLATE
+            .replace("{service_definitions}", &service_definitions)
+            .replace("{services_as_fields}", &service_names)
+
     }
 }
