@@ -2,7 +2,7 @@ use std::{path::Path, io};
 
 use chrono::Utc;
 
-use crate::{models::ddr_req::DomainDrivenRequest, utils::naming_convention::to_snake_case_plural};
+use crate::{models::ddr_req::DomainDrivenRequest, utils::naming_convention::{to_snake_case_plural, to_snake_case}};
 
 use super::file_generator::FileGenerator;
 
@@ -18,6 +18,13 @@ pub static STATIC_TEMPLATES_DIR: &str = "./static_templates";
 pub static RUST_STATIC_TEMPLATE_DIR: &str = "/rust/microservice";
 
 pub trait RustMicroserviceGenerator: FileGenerator {
+    fn generate_rust_microservice(&self, domain_driven_request: DomainDrivenRequest, out_dir: &str) -> io::Result<()>;
+}
+
+pub struct RustMicroserviceGeneratorImpl {}
+impl FileGenerator for RustMicroserviceGeneratorImpl {}
+
+impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
     fn generate_rust_microservice(&self, domain_driven_request: DomainDrivenRequest, out_dir: &str) -> io::Result<()> {
         let rust_static_template_dir = format!("{}{}", STATIC_TEMPLATES_DIR, RUST_STATIC_TEMPLATE_DIR);
         let rust_static_template_path = Path::new(&rust_static_template_dir);
@@ -76,15 +83,41 @@ pub trait RustMicroserviceGenerator: FileGenerator {
         /*
          * Generate models
          */
+        let models_mods_dynamic_template = domain_driven_request.generate_model_mods();
+        self.generate_file(String::new(), models_mods_dynamic_template, &format!("{}/{}/mod.rs", out_dir, MODELS_DIR))?;
+        let models_dynamic_templates = domain_driven_request.generate_models();
+        for (entity_name, model) in models_dynamic_templates {
+            let model_path = format!("{}.rs", to_snake_case(&entity_name));
+            self.generate_file(String::new(), model, &format!("{}/{}/{}", out_dir, MODELS_DIR, model_path))?;
+        }
+
+        /*
+         * Generate services
+         */
+        let services_mods_dynamic_template = domain_driven_request.generate_service_mods();
+        self.generate_file(String::new(), services_mods_dynamic_template, &format!("{}/{}/mod.rs", out_dir, SERVICES_DIR))?;
+        let services_dynamic_templates = domain_driven_request.generate_services();
+        for (entity_name, service) in services_dynamic_templates {
+            let service_path = format!("{}_service.rs", to_snake_case(&entity_name));
+            self.generate_file(String::new(), service, &format!("{}/{}/{}", out_dir, SERVICES_DIR, service_path))?;
+        }
+
+        /*
+         * Generate errors
+         */
+        let errors_dynamic_template = domain_driven_request.generate_error();
+        self.generate_file(String::new(), errors_dynamic_template, &format!("{}/src/errors.rs", out_dir))?;
+
+        /*
+         * Generate Docker compose
+         */
+        let docker_compose_dynamic_template = domain_driven_request.generate_docker_compose();
+        self.generate_file(String::new(), docker_compose_dynamic_template, &format!("{}/docker-compose.yml", out_dir))?;
         
-
-
-        
-
-
         Ok(())
 
     }
 
 
 }
+

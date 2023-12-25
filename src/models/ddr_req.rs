@@ -13,12 +13,12 @@ pub struct DomainDrivenRequest {
 }
 
 impl DomainDrivenRequest {
-    pub fn generate_models(&self) -> Vec<String> {
+    pub fn generate_models(&self) -> Vec<(String, String)> {
         let mut models = Vec::new();
         // extract entities in key value pairs
         for(entity_name, entity_description) in self.get_entity_names_and_values()  {
             let model = self.generate_struct(&entity_name.to_string(), entity_description.clone());
-            models.push(model);
+            models.push((entity_name, model));
         }
         models
     }
@@ -93,12 +93,12 @@ impl DomainDrivenRequest {
         controller
     }
 
-    pub fn generate_services(&self) -> Vec<String> {
+    pub fn generate_services(&self) -> Vec<(String, String)> {
         let mut service = Vec::new();
         // extract entities in key value pairs
         for entity_name in self.get_entity_names()  {
             let service_fn = ServiceGenerator::generate_service(self, &entity_name.to_string());
-            service.push(service_fn);
+            service.push((entity_name, service_fn));
         }
         service
     }
@@ -134,7 +134,10 @@ impl DomainDrivenRequest {
     pub fn generate_http(&self) -> String {
         self.generate_create_services_fn(self.get_entity_names())
 
+    }
 
+    pub fn generate_error(&self) -> String {
+        ErrorGenerator::generate_error(self, self.get_entity_names())
     }
 
     pub fn generate_controller_mods(&self) -> String {
@@ -146,6 +149,27 @@ impl DomainDrivenRequest {
         }
         controller_mods
     
+    }
+
+    pub fn generate_model_mods(&self) -> String {
+        let mut model_mods = String::new();
+        // extract entities in key value pairs
+        for entity_name in self.get_entity_names()  {
+            let model_mod = ModGenerator::generate_model_mod(self, &entity_name.to_string());
+            model_mods.push_str(model_mod.as_str());
+        }
+        model_mods
+    
+    }
+
+    pub fn generate_service_mods(&self) -> String {
+        let mut service_mods = String::new();
+        // extract entities in key value pairs
+        for entity_name in self.get_entity_names()  {
+            let service_mod = ModGenerator::generate_service_mod(self, &entity_name.to_string());
+            service_mods.push_str(service_mod.as_str());
+        }
+        service_mods
     }
     
     

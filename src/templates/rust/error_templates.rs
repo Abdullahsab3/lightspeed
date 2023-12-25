@@ -92,4 +92,12 @@ pub trait ErrorGenerator : ModelGenerator {
         ERROR_IMPL_TEMPLATE.replace("{error_to_client_errors}", &error_to_client_errors)
     }
 
+    fn generate_error(&self, entity_names: Vec<String>) -> String {
+        let mut error = String::new();
+        error.push_str(&self.generate_server_error_enums(entity_names.clone()));
+        error.push_str(&self.generate_client_error_enums(entity_names.clone()));
+        error.push_str(&self.generate_error_impl(entity_names));
+        error
+    }
+
 }

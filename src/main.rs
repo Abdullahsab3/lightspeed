@@ -1,3 +1,5 @@
+use project_generators::rust::RustMicroserviceGeneratorImpl;
+
 pub mod models;
 pub mod templates;
 pub mod utils;
@@ -26,6 +28,6 @@ fn main() {
     }
     "#;
     let ddr: models::ddr_req::DomainDrivenRequest = serde_json::from_str(test_json).unwrap();
-    let docker_compose = ddr.generate_docker_compose();
-    println!("{}", docker_compose);
+    let rust_reactive_microservice_generator = RustMicroserviceGeneratorImpl {};
+    
 }
