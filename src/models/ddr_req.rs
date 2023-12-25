@@ -16,7 +16,7 @@ impl DomainDrivenRequest {
     pub fn generate_models(&self) -> Vec<String> {
         let mut models = Vec::new();
         // extract entities in key value pairs
-        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+        for(entity_name, entity_description) in self.get_entity_names_and_values()  {
             let model = self.generate_struct(&entity_name.to_string(), entity_description.clone());
             models.push(model);
         }
@@ -26,7 +26,7 @@ impl DomainDrivenRequest {
     pub fn generate_postgres_tables(&self) -> Vec<String> {
         let mut tables = Vec::new();
         // extract entities in key value pairs
-        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+        for(entity_name, entity_description) in self.get_entity_names_and_values()  {
             let table = self.generate_table_query(entity_name.to_string(), entity_description.clone());
             tables.push(table);
         }
@@ -36,7 +36,7 @@ impl DomainDrivenRequest {
     pub fn generate_payloads(&self) -> Vec<String> {
         let mut payloads = Vec::new();
         // extract entities in key value pairs
-        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+        for(entity_name, entity_description) in self.get_entity_names_and_values()  {
             let create_payload = self.generate_create_payload(&entity_name.to_string(), entity_description.clone());
             let update_payload = self.generate_update_payload(&entity_name.to_string(), entity_description.clone());
             
@@ -49,7 +49,7 @@ impl DomainDrivenRequest {
     pub fn generate_queries(&self) -> Vec<String> {
         let mut queries = Vec::new();
         // extract entities in key value pairs
-        for(entity_name, entity_description) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+        for(entity_name, entity_description) in self.get_entity_names_and_values()  {
             let create_query = self.generate_create_query(&entity_name.to_string(), &entity_description);
             let update_query = self.generate_update_query(&entity_name.to_string(), &entity_description);
             let delete_query = self.generate_delete_query(&entity_name.to_string());
@@ -66,7 +66,21 @@ impl DomainDrivenRequest {
     }
 
     pub fn get_entity_names(&self) -> Vec<String> {
-        self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap()).map(|(entity_name, _)| entity_name.to_string()).collect::<Vec<String>>()
+        self
+            .entities
+            .as_array()
+            .unwrap()
+            .iter()
+            .flat_map(|x| x.as_object().unwrap()).map(|(entity_name, _)| entity_name.to_string()).collect::<Vec<String>>()
+    }
+
+    pub fn get_entity_names_and_values(&self) -> Vec<(String, Value)> {
+        self
+            .entities
+            .as_array()
+            .unwrap()
+            .iter()
+            .flat_map(|x| x.as_object().unwrap()).map(|(entity_name, entity_value)| (entity_name.to_string(), entity_value.clone())).collect::<Vec<(String, Value)>>()
     }
 
     pub fn generate_errors(&self) -> Vec<String> {
@@ -81,7 +95,7 @@ impl DomainDrivenRequest {
     pub fn generate_imports(&self) -> Vec<String> {
         let mut imports = Vec::new();
         // extract entities in key value pairs
-        for(entity_name, _) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+        for entity_name in self.get_entity_names()  {
             let model_import = ImportGenerator::generate_model_imports(self, &entity_name.to_string());
             let source_import = ImportGenerator::generate_source_imports(self, &entity_name.to_string());
             let service_import = ImportGenerator::generate_service_imports(self, &entity_name.to_string());
@@ -107,7 +121,7 @@ impl DomainDrivenRequest {
     pub fn generate_services(&self) -> Vec<String> {
         let mut service = Vec::new();
         // extract entities in key value pairs
-        for(entity_name, _) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+        for entity_name in self.get_entity_names()  {
             let service_fn = ServiceGenerator::generate_service(self, &entity_name.to_string());
             service.push(service_fn);
         }
@@ -117,7 +131,7 @@ impl DomainDrivenRequest {
     pub fn generate_sources(&self) -> Vec<String> {
         let mut sources = Vec::new();
         // extract entities in key value pairs
-        for(entity_name, entity_value) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+        for (entity_name, entity_value) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
             let source_file = SourceGenerator::generate_source(self, &entity_name.to_string(), &entity_value.clone());
             sources.push(source_file);
         }
@@ -128,9 +142,14 @@ impl DomainDrivenRequest {
         DockerComposeGenerator::generate_docker_compose(self, &self.service_name)
     }
 
-    pub fn generate_project_config(&self) -> String {
+    pub fn generate_environment_definitions(&self) -> String {
         ProjectConfigGenerator::generate_config_toml(self, &self.service_name)
     }
+
+    pub fn generate_cargo_toml(&self) -> String {
+        ProjectConfigGenerator::generate_cargo_toml(self, &self.service_name)
+    }
+    
     
 }
 

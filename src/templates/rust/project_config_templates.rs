@@ -30,6 +30,10 @@ pub trait ProjectConfigGenerator {
         CARGO_TOML_BIN_TEMPLATE.replace("{service_name}", service_name)
     }
 
+    fn generate_cargo_toml(&self, service_name: &str) -> String {
+        format!("{}\n{}", self.generate_cargo_toml_package(service_name), self.generate_cargo_toml_bin(service_name))
+    }
+
     fn generate_config_toml(&self, service_name: &str) -> String {
         CONFIG_TOML_TEMPLATE.replace("{sc_service_name}", &kebab_to_snake_case(service_name))
     }
