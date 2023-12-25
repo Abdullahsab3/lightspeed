@@ -1,36 +1,3 @@
-pub async fn create_services(
-    pool: Pool<Postgres>,
-    effy_producers: EffyProducers,
-) -> Result<ServicesState> {
-    let arc_pool = Arc::new(pool);
-    let tags_service: TagsService =
-        TagsService::new(Arc::clone(&arc_pool), effy_producers.tag_producer).await?;
-    let readings_service: ReadingsService = ReadingsService::new(Arc::clone(&arc_pool)).await?;
-    let folders_service: folders_service::FoldersService = folders_service::FoldersService::new(
-        Arc::clone(&arc_pool),
-        effy_producers.tag_relations_producer.clone(),
-    )
-    .await?;
-    let parameters_service: parameters_service::ParametersService =
-        parameters_service::ParametersService::new(Arc::clone(&arc_pool)).await?;
-    let sources_service: crate::services::sources_service::SourcesService =
-        crate::services::sources_service::SourcesService::new(Arc::clone(&arc_pool)).await?;
-    let asset_linking_service: crate::services::asset_linking_service::AssetLinkingService =
-        crate::services::asset_linking_service::AssetLinkingService::new(
-            Arc::clone(&arc_pool),
-            effy_producers.tag_relations_producer,
-        )
-        .await?;
-    Ok(ServicesState {
-        tags_service,
-        readings_service,
-        folders_service,
-        parameters_service,
-        sources_service,
-        asset_linking_service,
-    })
-}
-
 pub fn app(services: ServicesState) -> Router {
     routes::routes_system(services.into())
         .layer(middleware::map_response(main_response_mapper))

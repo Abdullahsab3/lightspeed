@@ -1,6 +1,7 @@
 pub mod models;
 pub mod templates;
 pub mod utils;
+pub mod project_generators;
 
 fn main() {
     let test_json = r#"
