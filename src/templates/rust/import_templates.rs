@@ -5,9 +5,9 @@ use crate::{import};"#;
 
 pub static IMPORT_MODEL_TEMPLATE: &str = r#"models::{sc_entity_name}::{entity_name}"#;
 
-pub static IMPORT_SOURCE_TEMPLATE: &str = r#"sources::{sc_entity_name}::{entity_plural}Table"#;
+pub static IMPORT_SOURCE_TEMPLATE: &str = r#"sources::{sc_entity_name}_service::{entity_plural}Table"#;
 
-pub static IMPORT_SERVICE_TEMPLATE: &str = r#"services::{sc_entity_name}::{entity_plural}Service"#;
+pub static IMPORT_SERVICE_TEMPLATE: &str = r#"services::{sc_entity_name}_service::{entity_plural}Service"#;
 
 pub static IMPORT_CONTROLLER_TEMPLATE: &str = r#"controllers::{sc_entity_plural}_controller::*"#;
 

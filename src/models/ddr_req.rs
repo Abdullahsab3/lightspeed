@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use strum::EnumProperty;
 
-use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator, service_templates::ServiceGenerator, axum_routes_templates::AxumRoutesGenerator, error_templates::ErrorGenerator, import_templates::ImportGenerator, project_config_templates::ProjectConfigGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator}, docker::docker_compose::DockerComposeGenerator};
+use crate::templates::{rust::{controller_templates::ControllerGenerator, model_templates::ModelGenerator, source_templates::SourceGenerator, service_templates::ServiceGenerator, axum_routes_templates::AxumRoutesGenerator, error_templates::ErrorGenerator, import_templates::ImportGenerator, project_config_templates::ProjectConfigGenerator, mod_template::ModGenerator}, postgres::{table_templates::PostgresTableGenerator, crud_query_templates::CrudQueryGenerator, database_template::DatabaseGenerator}, docker::docker_compose::DockerComposeGenerator};
 
 
 
@@ -23,12 +23,12 @@ impl DomainDrivenRequest {
         models
     }
 
-    pub fn generate_postgres_tables(&self) -> Vec<String> {
+    pub fn generate_postgres_tables(&self) -> Vec<(String, String)> {
         let mut tables = Vec::new();
         // extract entities in key value pairs
         for(entity_name, entity_description) in self.get_entity_names_and_values()  {
             let table = self.generate_table_query(entity_name.to_string(), entity_description.clone());
-            tables.push(table);
+            tables.push((entity_name, table));
         }
         tables
     }
@@ -83,37 +83,12 @@ impl DomainDrivenRequest {
             .flat_map(|x| x.as_object().unwrap()).map(|(entity_name, entity_value)| (entity_name.to_string(), entity_value.clone())).collect::<Vec<(String, Value)>>()
     }
 
-    pub fn generate_errors(&self) -> Vec<String> {
-        let mut errors = Vec::new();
-        // extract entities in key value pairs
-        errors.push(ErrorGenerator::generate_server_error_enums(self, self.get_entity_names()));
-        errors.push(ErrorGenerator::generate_client_error_enums(self, self.get_entity_names()));
-        errors.push(ErrorGenerator::generate_error_impl(self, self.get_entity_names()));
-        errors
-    }
-
-    pub fn generate_imports(&self) -> Vec<String> {
-        let mut imports = Vec::new();
-        // extract entities in key value pairs
-        for entity_name in self.get_entity_names()  {
-            let model_import = ImportGenerator::generate_model_imports(self, &entity_name.to_string());
-            let source_import = ImportGenerator::generate_source_imports(self, &entity_name.to_string());
-            let service_import = ImportGenerator::generate_service_imports(self, &entity_name.to_string());
-            let controller_import = ImportGenerator::generate_controller_imports(self, &entity_name.to_string());
-            imports.push(model_import);
-            imports.push(source_import);
-            imports.push(service_import);
-            imports.push(controller_import);
-        }
-        imports
-    }
-
-    pub fn generate_controllers(&self) -> Vec<String> {
+    pub fn generate_controllers(&self) -> Vec<(String, String)> {
         let mut controller = Vec::new();
         // extract entities in key value pairs
-        for(entity_name, entity_value) in self.entities.as_array().unwrap().iter().flat_map(|x| x.as_object().unwrap())  {
+        for(entity_name, entity_value) in self.get_entity_names_and_values()  {
             let controller_fn = ControllerGenerator::generate_controller(self, &entity_name.to_string(), entity_value.clone());
-            controller.push(controller_fn);
+            controller.push((entity_name, controller_fn));
         }
         controller
     }
@@ -149,6 +124,23 @@ impl DomainDrivenRequest {
     pub fn generate_cargo_toml(&self) -> String {
         ProjectConfigGenerator::generate_cargo_toml(self, &self.service_name)
     }
+
+    pub fn generate_database_config(&self) -> String {
+        DatabaseGenerator::generate_database_drop(self, self.service_name.as_str())
+        +
+        DatabaseGenerator::generate_database_create(self, self.service_name.as_str()).as_str()
+    }
+
+    pub fn generate_controller_mods(&self) -> String {
+        let mut controller_mods = String::new();
+        // extract entities in key value pairs
+        for entity_name in self.get_entity_names()  {
+            let controller_mod = ModGenerator::generate_controller_mod(self, &entity_name.to_string());
+            controller_mods.push_str(controller_mod.as_str());
+        }
+        controller_mods
+    
+    }
     
     
 }
@@ -164,6 +156,8 @@ impl ErrorGenerator for DomainDrivenRequest {}
 impl ImportGenerator for DomainDrivenRequest {}
 impl DockerComposeGenerator for DomainDrivenRequest {}
 impl ProjectConfigGenerator for DomainDrivenRequest {}
+impl DatabaseGenerator for DomainDrivenRequest {}
+impl ModGenerator for DomainDrivenRequest {}
 
 pub enum AttributeType {
     String,

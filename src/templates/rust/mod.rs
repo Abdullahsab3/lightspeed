@@ -6,3 +6,4 @@ pub mod axum_routes_templates;
 pub mod error_templates;
 pub mod import_templates;
 pub mod project_config_templates;
+pub mod mod_template;
