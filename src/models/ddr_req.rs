@@ -211,6 +211,7 @@ pub enum AttributeType {
     Boolean,
     UTCDateTime,
     Option(Box<AttributeType>),
+    Unknown(String),
 }
 
 #[allow(non_camel_case_types)]
@@ -227,6 +228,7 @@ pub enum PostgresAttributeType {
     TIMESTAMP,
     #[strum(props(is_nullable = "true"))]
     OPTION(Box<PostgresAttributeType>),
+    UNKNOWN,
 }
 
 impl PostgresAttributeType {
@@ -246,6 +248,7 @@ impl From<AttributeType> for PostgresAttributeType {
             AttributeType::Boolean => PostgresAttributeType::BOOLEAN,
             AttributeType::UTCDateTime => PostgresAttributeType::TIMESTAMP,
             AttributeType::Option(attribute_type) => PostgresAttributeType::OPTION(Box::new(Into::<PostgresAttributeType>::into(*attribute_type))),
+            AttributeType::Unknown(_) => PostgresAttributeType::UNKNOWN,
         }
     }
 }
@@ -263,6 +266,7 @@ impl ToString for PostgresAttributeType {
             PostgresAttributeType::BOOLEAN => "BOOLEAN".to_string(),
             PostgresAttributeType::TIMESTAMP => "TIMESTAMP".to_string(),
             PostgresAttributeType::OPTION(attribute_type) => format!("{}", attribute_type.to_string()),
+            PostgresAttributeType::UNKNOWN => panic!("Unknown attribute type"),
         };
         attr_type + if self.is_nullable() { "" } else { " NOT NULL" }
     }
@@ -283,7 +287,7 @@ impl AttributeType {
                 let inner_type = s[7..s.len() - 1].to_string();
                 AttributeType::Option(Box::new(AttributeType::from_str(inner_type.as_str())))
             }
-            _ => panic!("Invalid attribute type: {}", s),
+            _ => AttributeType::Unknown(s.to_string()),
         }
 }
 }
@@ -300,6 +304,7 @@ impl ToString for AttributeType {
             AttributeType::Boolean => "bool".to_string(),
             AttributeType::UTCDateTime => "UTCDateTime".to_string(),
             AttributeType::Option(attribute_type) => format!("Option<{}>", attribute_type.to_string()),
+            AttributeType::Unknown(_) => panic!("Unknown attribute type"),
         }
     }
 }
