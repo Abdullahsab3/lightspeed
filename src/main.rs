@@ -13,12 +13,14 @@ fn main() {
         "entities": [
             {
                 "Person": {
+                    "id": "Uuid",
                     "name": "String",
                     "age": "Option<i32>",
                     "height": "f32",
                     "is_cool": "bool"
                 },
                 "Car": {
+                    "id": "Uuid",
                     "make": "String",
                     "model": "String",
                     "year": "i32",

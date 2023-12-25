@@ -13,6 +13,7 @@ pub struct {struct_name} {
 pub static NEW_FROM_PAYLOAD_TEMPLATE: &str = r#"
     pub fn new(payload: &Add{entity_name}Payload) -> Result<Self, Error> {
         Ok(Self {
+            id: Uuid::new_v4(),
             {new_attribute_from_payload}
         })
     }
@@ -24,6 +25,7 @@ pub static NEW_ATTRIBUTE_FROM_PAYLOAD: &str = r#"
 pub static UPDATE_FROM_PAYLOAD_TEMPLATE: &str = r#"
     pub fn update(&mut self, payload: &Update{entity_name}Payload) -> Result<Self, Error> {
         Ok(Self {
+            id: self.id,
             {update_attribute_from_payload}
         })
     }
@@ -96,6 +98,9 @@ pub trait ModelGenerator: ImportGenerator {
     fn generate_new_fn(&self, entity_name: &str, entity: &Value) -> String {
         let mut new_attribute_from_payload = String::new();
         for (key, value) in entity.as_object().unwrap() {
+            if key == "id" {
+                continue;
+            }
             new_attribute_from_payload.push_str(&NEW_ATTRIBUTE_FROM_PAYLOAD
                 .replace("{attribute_name}", key)
                 .replace("{attribute_type}", value.as_str().unwrap()));
@@ -108,6 +113,9 @@ pub trait ModelGenerator: ImportGenerator {
     fn generate_update_fn(&self, entity_name: &str, entity: &Value) -> String {
         let mut update_attribute_from_payload = String::new();
         for (key, value) in entity.as_object().unwrap() {
+            if key == "id" {
+                continue;
+            }
             let attribute_type = AttributeType::from_str(value.as_str().unwrap());
             let attribute_type_str = match &attribute_type {
                 AttributeType::Option(t) => t.to_string(),

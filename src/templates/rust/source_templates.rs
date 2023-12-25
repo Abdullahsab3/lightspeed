@@ -54,7 +54,7 @@ pub static DELETE_ENTITY_FN: &str = r##"
             "#,
             {sc_entity_name}_id
         )
-        .execute(&mut transaction)
+        .execute(transaction.as_mut())
         .await?;
         transaction.commit().await?;
         Ok(())
