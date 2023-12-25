@@ -1,9 +1,9 @@
 pub static DATABASE_CREATE_TEMPLATE: &str = r#"
-CREATE DATABASE IF NOT EXISTS {sc_service_name};
+CREATE DATABASE "{sc_service_name}";
 "#;
 
 pub static DATABASE_DROP_TEMPLATE: &str = r#"
-DROP DATABASE IF EXISTS {sc_service_name};
+DROP DATABASE IF EXISTS "{sc_service_name}";
 "#;
 
 pub trait DatabaseGenerator {

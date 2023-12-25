@@ -1,4 +1,4 @@
-use std::{path::Path, io, fs};
+use std::{path::Path, io, fs, i32};
 
 use chrono::Utc;
 
@@ -59,10 +59,13 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
          * Generate migrations
          */
         let migrations_dynamic_template = domain_driven_request.generate_postgres_tables();
+        let mut counter = 0;
         for (entity_name, migration) in migrations_dynamic_template {
-            let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
+            let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string().parse::<i64>().unwrap() + counter;
+            
             let migration_path = format!("{}_{}.sql", timestamp, to_snake_case_plural(&entity_name));
             self.generate_file(String::new(), migration, &format!("{}/{}/{}", out_dir, MIGRATIONS_DIR, migration_path))?;
+            counter += 1;
         }
 
         /*
@@ -102,7 +105,7 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
         self.generate_file(String::new(), services_mods_dynamic_template, &format!("{}/{}/mod.rs", out_dir, SERVICES_DIR))?;
         let services_dynamic_templates = domain_driven_request.generate_services();
         for (entity_name, service) in services_dynamic_templates {
-            let service_path = format!("{}_service.rs", to_snake_case(&entity_name));
+            let service_path = format!("{}_service.rs", to_snake_case_plural(&entity_name));
             self.generate_file(String::new(), service, &format!("{}/{}/{}", out_dir, SERVICES_DIR, service_path))?;
         }
 
@@ -113,7 +116,7 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
         self.generate_file(String::new(), sources_mods_dynamic_template, &format!("{}/{}/mod.rs", out_dir, SOURCES_DIR))?;
         let sources_dynamic_templates = domain_driven_request.generate_sources();
         for (entity_name, source) in sources_dynamic_templates {
-            let source_path = format!("{}_table.rs", to_snake_case(&entity_name));
+            let source_path = format!("{}_table.rs", to_snake_case_plural(&entity_name));
             self.generate_file(String::new(), source, &format!("{}/{}/{}", out_dir, SOURCES_DIR, source_path))?;
         }
 

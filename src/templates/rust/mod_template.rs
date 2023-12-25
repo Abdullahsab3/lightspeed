@@ -24,12 +24,12 @@ pub trait ModGenerator {
     }
     
     fn generate_service_mod(&self, entity_name: &str) -> String {
-        let module_name = SERVICE_MOD_TEMPLATE.replace("{sc_entity_name}", &to_snake_case(entity_name));
+        let module_name = SERVICE_MOD_TEMPLATE.replace("{sc_entity_name}", &to_snake_case_plural(entity_name));
         MOD_TEMPLATE.replace("{module_name}", &module_name)
     }
 
     fn generate_source_mod(&self, entity_name: &str) -> String {
-        let module_name = SOURCE_MOD_TEMPLATE.replace("{sc_entity_name}", &to_snake_case(entity_name));
+        let module_name = SOURCE_MOD_TEMPLATE.replace("{sc_entity_name}", &to_snake_case_plural(entity_name));
         MOD_TEMPLATE.replace("{module_name}", &module_name)
     }
 }

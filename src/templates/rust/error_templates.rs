@@ -6,7 +6,7 @@ pub static ENTITY_ALREADY_EXISTS_ERROR_TEMPLATE: &str = r#"{entity_name}AlreadyE
 pub static ENTITY_CREATION_ERROR_TEMPLATE: &str = r#"{entity_name}CreationError(String)"#;
 pub static ENTITY_DOES_NOT_EXIST_ERROR_TEMPLATE: &str = r#"{entity_name}DoesNotExist"#;
 pub static ENTITY_UPDATE_ERROR_TEMPLATE: &str = r#"{entity_name}UpdateError(String)"#;
-pub static ENTITY_DELETION_ERROR_TEMPLATE: &str = r#"{entity_name}DeletionError(String)"#;
+pub static ENTITY_DELETION_ERROR_TEMPLATE: &str = r#"{entity_name}DeleteError(String)"#;
 pub static ENTITY_FETCH_ERROR_TEMPLATE: &str = r#"{entity_name}FetchError(String)"#;
 
 pub static CLIENT_ENTITY_ALREADY_EXISTS_ERROR_TEMPLATE: &str = r#"{usc_entity_name}_ALREADY_EXISTS"#;
@@ -17,17 +17,17 @@ pub static CLIENT_ENTITY_DELETION_ERROR_TEMPLATE: &str = r#"{usc_entity_name}_DE
 pub static CLIENT_ENTITY_FETCH_ERROR_TEMPLATE: &str = r#"{usc_entity_name}_FETCH_ERROR"#;
 
 pub static ERROR_TO_CLIENT_ERROR_EXIST_TEMPLATE: &str = r#"
-            Error::{entity_name}AlreadyExists => (StatusCode::Conflict, ClientError::{usc_entity_name}_ALREADY_EXISTS),"#;
+            Error::{entity_name}AlreadyExists => (StatusCode::CONFLICT, ClientError::{usc_entity_name}_ALREADY_EXISTS),"#;
 pub static ERROR_TO_CLIENT_ERROR_CREATION_TEMPLATE: &str = r#"
-            Error::{entity_name}CreationError(_) => (StatusCode::InternalServerError, ClientError::{usc_entity_name}_CREATION_ERROR),"#;
+            Error::{entity_name}CreationError(_) => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::{usc_entity_name}_CREATION_ERROR),"#;
 pub static ERROR_TO_CLIENT_ERROR_DOES_NOT_EXIST_TEMPLATE: &str = r#"
-            Error::{entity_name}DoesNotExist => (StatusCode::NotFound, ClientError::{usc_entity_name}_DOES_NOT_EXIST),"#;
+            Error::{entity_name}DoesNotExist => (StatusCode::NOT_FOUND, ClientError::{usc_entity_name}_DOES_NOT_EXIST),"#;
 pub static ERROR_TO_CLIENT_ERROR_UPDATE_TEMPLATE: &str = r#"
-            Error::{entity_name}UpdateError(_) => (StatusCode::InternalServerError, ClientError::{usc_entity_name}_UPDATE_ERROR),"#;
+            Error::{entity_name}UpdateError(_) => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::{usc_entity_name}_UPDATE_ERROR),"#;
 pub static ERROR_TO_CLIENT_ERROR_DELETION_TEMPLATE: &str = r#"
-            Error::{entity_name}DeletionError(_) => (StatusCode::InternalServerError, ClientError::{usc_entity_name}_DELETION_ERROR),"#;
+            Error::{entity_name}DeleteError(_) => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::{usc_entity_name}_DELETION_ERROR),"#;
 pub static ERROR_TO_CLIENT_ERROR_FETCH_TEMPLATE: &str = r#"
-            Error::{entity_name}FetchError(_) => (StatusCode::InternalServerError, ClientError::{usc_entity_name}_FETCH_ERROR),"#;
+            Error::{entity_name}FetchError(_) => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::{usc_entity_name}_FETCH_ERROR),"#;
 
 pub static ERROR_IMPL_TEMPLATE: &str = r#"
 impl Error {

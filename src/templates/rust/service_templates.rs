@@ -23,7 +23,7 @@ pub static VERIFY_ENTITY_UPDATE_FN: &str = r##"
 pub static VERIFY_ENTITY_DELETE_FN: &str = r##"
     pub async fn verify_{sc_entity_name}_delete_constraints(
         &self,
-        {sc_entity_name}_id: i32
+        {sc_entity_name}_id: Uuid
     ) -> Result<(), Error> {
         {verify_constraints}
     }
@@ -34,10 +34,10 @@ pub static CREATE_ENTITY_FN: &str = r##"
         &self,
         {sc_entity_name}_payload: Add{entity_name}Payload
     ) -> Result<{entity_name}, Error> {
-        let {sc_entity_name} = {entity_name}::new({sc_entity_name}_payload)?;
+        let {sc_entity_name} = {entity_name}::new(&{sc_entity_name}_payload)?;
         self.verify_{sc_entity_name}_creation_constraints(&{sc_entity_name}).await?;
 
-        match self.{table_name}_table.create_{sc_entity_name}(&{sc_entity_name}).await {
+        match self.{table_name}_table.create_{sc_entity_name}({sc_entity_name}).await {
             Ok({sc_entity_name}) => Ok({sc_entity_name}),
             Err(e) => Err(Error::{entity_name}CreationError(e.to_string()))
         }
@@ -47,7 +47,7 @@ pub static CREATE_ENTITY_FN: &str = r##"
 pub static UPDATE_ENTITY_FN: &str = r##"
     pub async fn update_{sc_entity_name}(
         &self,
-        {sc_entity_name}_id: i32,
+        {sc_entity_name}_id: Uuid,
         {sc_entity_name}_payload: Update{entity_name}Payload
     ) -> Result<{entity_name}, Error> {
         let mut {sc_entity_name} = self.get_{sc_entity_name}({sc_entity_name}_id).await?;
@@ -64,7 +64,7 @@ pub static UPDATE_ENTITY_FN: &str = r##"
 pub static DELETE_ENTITY_FN: &str = r##"
     pub async fn delete_{sc_entity_name}(
         &self,
-        {sc_entity_name}_id: i32
+        {sc_entity_name}_id: Uuid
     ) -> Result<(), Error> {
         self.verify_{sc_entity_name}_delete_constraints({sc_entity_name}_id).await?;
 
@@ -81,6 +81,7 @@ use std::sync::Arc;
 use sqlx::{Pool, Postgres};
 {entity_imports}
 use crate::error::Error;
+use uuid::Uuid;
 
 pub struct {entity_plural}Service {
     {sc_entity_plural}_table: {entity_plural}Table,
@@ -89,7 +90,7 @@ pub struct {entity_plural}Service {
 impl {entity_plural}Service {
     pub fn new(db_pool: &Arc<Pool<Postgres>>) -> Self {
         Self {
-            {sc_entity_plural}_table: {entity_plural}Table::new(db_pool),
+            {sc_entity_plural}_table: {entity_plural}Table::new(db_pool.clone()),
         }
     }
 
@@ -117,7 +118,7 @@ pub async fn create_services(
 "#;
 
 pub static SERVICE_DEFINITION: &str = r#"
-let {sc_entity_plural}_service = {entity_plural}Service::new(&arc_pool);
+let {sc_entity_plural}_service = {sc_entity_plural}_service::{entity_plural}Service::new(&arc_pool);
 "#;
 
 
@@ -208,13 +209,13 @@ pub trait ServiceGenerator: ImportGenerator {
             .iter()
             .map(|entity_name| {
                 let service_key = to_snake_case_plural(entity_name) + "_service";
-                let service_value = to_plural(entity_name) + "Service";
+                let service_value = to_snake_case_plural(&entity_name) + "_service::" + to_plural(entity_name).as_str() + "Service";
                 ATTRIBUTE_TEMPLATE
                     .replace("{attribute_name}", &service_key)
                     .replace("{attribute_type}", &service_value)
             })
             .collect::<Vec<String>>()
-            .join(",\n");
+            .join("\n");
 
         SERVICES_STATE_TEMPLATE
             .replace("{services_as_fields}", &services_as_fields)

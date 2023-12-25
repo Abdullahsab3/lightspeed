@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use crate::{utils::naming_convention::to_snake_case, models::ddr_req::AttributeType};
+use crate::{utils::naming_convention::{to_snake_case, to_snake_case_plural}, models::ddr_req::AttributeType};
 
 use super::{model_templates::ATTRIBUTE_TEMPLATE, import_templates::ImportGenerator};
 
@@ -10,7 +10,7 @@ pub async fn create_{sc_entity_name}(
     Json(payload): Json<Add{entity_name}Payload>
 ) -> Result<impl IntoResponse> {
     services
-        .{sc_entity_name}_service
+        .{sc_plural_entity}_service
         .create_{sc_entity_name}(payload)
         .await
         .map(|{sc_entity_name}| {
@@ -33,7 +33,7 @@ pub async fn update_{sc_entity_name}(
     Json(payload): Json<Update{entity_name}Payload>
 ) -> Result<impl IntoResponse> {
     services
-        .{sc_entity_name}_service
+        .{sc_plural_entity}_service
         .update_{sc_entity_name}(id, payload)
         .await
         .map(|{sc_entity_name}| {
@@ -58,7 +58,7 @@ pub async fn delete_{sc_entity_name}(
     State(services): State<Arc<ServicesState>>,
 ) -> Result<impl IntoResponse> {
     services
-        .{sc_entity_name}_service
+        .{sc_plural_entity}_service
         .delete_{sc_entity_name}(id)
         .await
 }
@@ -90,18 +90,21 @@ pub trait ControllerGenerator: ImportGenerator {
     fn generate_create_fn(&self, entity_name: &str) -> String {
         CONTROLLER_CREATE_ENTITY_TEMPLATE
             .replace("{sc_entity_name}", to_snake_case(entity_name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case_plural(entity_name).as_str())
             .replace("{entity_name}", &entity_name)
     }
 
     fn generate_update_fn(&self, entity_name: &str) -> String {
         CONTROLLER_UPDATE_ENTITY_TEMPLATE
             .replace("{sc_entity_name}", to_snake_case(entity_name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case_plural(entity_name).as_str())
             .replace("{entity_name}", &entity_name)
     }
 
     fn generate_delete_fn(&self, entity_name: &str) -> String {
         CONTROLLER_DELETE_ENTITY_TEMPLATE
             .replace("{sc_entity_name}", to_snake_case(entity_name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case_plural(entity_name).as_str())
             .replace("{entity_name}", &entity_name)
     }
 

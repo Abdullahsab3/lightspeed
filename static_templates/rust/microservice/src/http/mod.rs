@@ -19,7 +19,7 @@ pub fn app(services: ServicesState) -> Router {
 }
 
 pub async fn serve(
-    pool: Pool<Postgres>,
+    pool: PgPool,
 ) -> Result<()> {
     let services = create_services(pool).await?;
     match axum::Server::bind(&"0.0.0.0:9000".parse().expect("Could not parse the address"))

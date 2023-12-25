@@ -16,7 +16,7 @@ pub static CREATE_ENTITY_FN: &str = r##"
             "#,
             {entity_values}
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(transaction.as_mut())
         .await?;
         transaction.commit().await?;
         Ok(new_{sc_entity_name})
@@ -35,7 +35,7 @@ pub static UPDATE_ENTITY_FN: &str = r##"
             "#,
             {entity_values}
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(transaction.as_mut())
         .await?;
         transaction.commit().await?;
         Ok(updated_{sc_entity_name})
@@ -45,7 +45,7 @@ pub static UPDATE_ENTITY_FN: &str = r##"
 pub static DELETE_ENTITY_FN: &str = r##"
     pub async fn delete_{sc_entity_name}(
         &self,
-        {sc_entity_name}_id: i32
+        {sc_entity_name}_id: Uuid
     ) -> Result<(), sqlx::Error> {
         let mut transaction = self.pool.begin().await?;
         sqlx::query_as!(
@@ -63,7 +63,7 @@ pub static DELETE_ENTITY_FN: &str = r##"
 
 pub static SOURCE_FILE_TEMPLATE: &str = r#"
 use std::sync::Arc;
-
+use uuid::Uuid;
 use sqlx::{Pool, Postgres};
 
 {entity_imports}
@@ -119,9 +119,9 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
         let entity_imports = self.generate_model_imports(entity_name);
 
         let mut source_functions = String::new();
-        source_functions.push_str(&self.generate_create_fn(entity_name, &entity));
-        source_functions.push_str(&self.generate_update_fn(entity_name, &entity));
-        source_functions.push_str(&self.generate_delete_fn(entity_name));
+        source_functions.push_str(SourceGenerator::generate_create_fn(self, entity_name, &entity).as_str());
+        source_functions.push_str(SourceGenerator::generate_update_fn(self, entity_name, &entity).as_str());
+        source_functions.push_str(SourceGenerator::generate_delete_fn(self, entity_name).as_str());
 
         SOURCE_FILE_TEMPLATE
             .replace("{entity_imports}", &entity_imports)

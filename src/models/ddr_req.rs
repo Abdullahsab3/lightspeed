@@ -17,7 +17,7 @@ impl DomainDrivenRequest {
         let mut models = Vec::new();
         // extract entities in key value pairs
         for(entity_name, entity_description) in self.get_entity_names_and_values()  {
-            let model = self.generate_struct(&entity_name.to_string(), entity_description.clone());
+            let model = self.generate_model(&entity_name, &entity_description);
             models.push((entity_name, model));
         }
         models
@@ -169,7 +169,8 @@ impl DomainDrivenRequest {
             let service_mod = ModGenerator::generate_service_mod(self, &entity_name.to_string());
             service_mods.push_str(service_mod.as_str());
         }
-        service_mods
+        let services_state = ServiceGenerator::generate_services_state(self, self.get_entity_names());
+        service_mods + services_state.as_str()
     }
 
     pub fn generate_source_mods(&self) -> String {
