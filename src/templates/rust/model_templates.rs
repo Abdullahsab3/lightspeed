@@ -1,5 +1,4 @@
-use serde_json::Value;
-use crate::{models::ddr_req::AttributeType, utils::naming_convention::to_snake_case};
+use crate::{models::entity::{Entity, AttributeType}, utils::naming_convention::to_snake_case};
 
 use super::import_templates::ImportGenerator;
 
@@ -74,49 +73,49 @@ use crate::error::Error;
 
 pub trait ModelGenerator: ImportGenerator {
 
-    fn generate_model(&self, entity_name: &str, entity: &Value) -> String {
-        let model_definition = self.generate_struct(entity_name, entity);
-        let model_impl = self.generate_struct_impl(entity_name, entity);
+    fn generate_model(&self, entity: &Entity) -> String {
+        let model_definition = self.generate_struct(entity);
+        let model_impl = self.generate_struct_impl(entity);
         MODEL_FILE_TEMPLATE
-            .replace("{imports}", &self.generate_controller_imports(entity_name))
+            .replace("{imports}", &self.generate_controller_imports(&entity.name))
             .replace("{model_definition}", &model_definition)
             .replace("{model_impl}", &model_impl)
     }
-    fn generate_struct(&self, name: &str, entity: &Value) -> String {
+    fn generate_struct(&self, entity: &Entity) -> String {
         let mut attributes = String::new();
-        for (key, value) in entity.as_object().unwrap() {
-            let attribute_type = AttributeType::from_str(value.as_str().unwrap());
+        for (key, value) in &entity.attributes {
+            let attribute_type = AttributeType::from_str(&value.to_string());
             attributes.push_str(&ATTRIBUTE_TEMPLATE
-                .replace("{attribute_name}", key)
+                .replace("{attribute_name}", &key)
                 .replace("{attribute_type}", &attribute_type.to_string()));
         }
         STRUCT_TEMPLATE
-            .replace("{struct_name}", &name)
+            .replace("{struct_name}", &entity.name)
             .replace("{attributes}", &attributes)
     }
 
-    fn generate_new_fn(&self, entity_name: &str, entity: &Value) -> String {
+    fn generate_new_fn(&self, entity: &Entity) -> String {
         let mut new_attribute_from_payload = String::new();
-        for (key, value) in entity.as_object().unwrap() {
-            if key == "id" {
+        for (key, value) in &entity.attributes {
+            if key == &entity.primary_key {
                 continue;
             }
             new_attribute_from_payload.push_str(&NEW_ATTRIBUTE_FROM_PAYLOAD
-                .replace("{attribute_name}", key)
-                .replace("{attribute_type}", value.as_str().unwrap()));
+                .replace("{attribute_name}", &key)
+                .replace("{attribute_type}", &value.to_string()));
         }
         NEW_FROM_PAYLOAD_TEMPLATE
-            .replace("{entity_name}", &entity_name)
+            .replace("{entity_name}", &entity.name)
             .replace("{new_attribute_from_payload}", &new_attribute_from_payload)
     }
 
-    fn generate_update_fn(&self, entity_name: &str, entity: &Value) -> String {
+    fn generate_update_fn(&self, entity: &Entity) -> String {
         let mut update_attribute_from_payload = String::new();
-        for (key, value) in entity.as_object().unwrap() {
-            if key == "id" {
+        for (key, value) in &entity.attributes {
+            if key == &entity.primary_key {
                 continue;
             }
-            let attribute_type = AttributeType::from_str(value.as_str().unwrap());
+            let attribute_type = AttributeType::from_str(&value.to_string());
             let attribute_type_str = match &attribute_type {
                 AttributeType::Option(t) => t.to_string(),
                 _ => attribute_type.to_string()
@@ -124,35 +123,35 @@ pub trait ModelGenerator: ImportGenerator {
             match attribute_type {
                 AttributeType::Option(_) => {
                     update_attribute_from_payload.push_str(&UPDATE_ATTRIBUTE_FROM_PAYLOAD_NULLABLE
-                        .replace("{attribute_name}", key)
+                        .replace("{attribute_name}", &key)
                         .replace("{attribute_type}", &attribute_type_str));
                 },
                 _ => {
                     update_attribute_from_payload.push_str(&UPDATE_ATTRIBUTE_FROM_PAYLOAD
-                        .replace("{attribute_name}", key)
+                        .replace("{attribute_name}", &key)
                         .replace("{attribute_type}", &attribute_type_str));
                 }
             }
         }
         UPDATE_FROM_PAYLOAD_TEMPLATE
-            .replace("{entity_name}", &entity_name)
+            .replace("{entity_name}", &entity.name)
             .replace("{update_attribute_from_payload}", &update_attribute_from_payload)
     }
 
-    fn generate_struct_impl(&self, entity_name: &str, entity: &Value) -> String {
-        let new_from_payload = self.generate_new_fn(entity_name, entity);
-        let update_from_payload = self.generate_update_fn(entity_name, entity);
+    fn generate_struct_impl(&self, entity: &Entity) -> String {
+        let new_from_payload = self.generate_new_fn(entity);
+        let update_from_payload = self.generate_update_fn(entity);
         ENTITY_IMPL_TEMPLATE
-            .replace("{entity_name}", &entity_name)
+            .replace("{entity_name}", &entity.name)
             .replace("{new_from_payload}", &new_from_payload)
             .replace("{update_from_payload}", &update_from_payload)
     }
 
     // accessors for all the fields
-    fn generate_entity_value_accessors(&self, entity_name: &str, entity: &Value) -> String {
+    fn generate_entity_value_accessors(&self, entity: &Entity) -> String {
         let mut entity_values = String::new();
-        for (field_name, _) in entity.as_object().unwrap().iter() {
-            entity_values.push_str(&format!("{}.{}, ", to_snake_case(entity_name), field_name));
+        for (field_name, _) in &entity.attributes {
+            entity_values.push_str(&format!("{}.{}, ", to_snake_case(&entity.name), field_name));
         }
         entity_values
     }

@@ -1,7 +1,6 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
-
-use super::ddr_req::AttributeType;
+use strum::EnumProperty;
 
 pub type RawEntities = Value;
 pub type RawEntity = Value;
@@ -34,14 +33,20 @@ impl ForeginKey {
 pub type FilterBy = Vec<AttributeName>;
 pub type UniqueAttributes = Vec<AttributeName>;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Entity {
     pub name: String,
     pub attributes: Vec<(AttributeName, AttributeType)>,
-    pub primary_key: Option<String>,
+    pub primary_key: String,
     pub foreign_keys: Vec<ForeginKey>,
     pub unique_attributes: Vec<UniqueAttributes>,
     pub filter_by: Vec<FilterBy>,
+}
+
+impl Entity {
+    pub fn is_last(&self, attribute_name: &str) -> bool {
+        attribute_name == self.attributes.last().unwrap().0.as_str()
+    }
 }
 
 impl From<(EntityName, RawEntity, RawEntities)> for Entity {
@@ -82,7 +87,7 @@ impl From<(EntityName, RawEntity, RawEntities)> for Entity {
 
         let attributes = attributes.into_iter().filter(|attribute| !unknown_attributes.contains(&attribute.0)).collect::<Vec<(AttributeName, AttributeType)>>();
 
-        let primary_key = raw_entity.get("primary_key").map(|primary_key| primary_key.as_str().unwrap().to_string()).or(Some("id".to_string()));
+        let primary_key = raw_entity.get("primary_key").map(|primary_key| primary_key.as_str().unwrap().to_string()).unwrap_or("id".to_string());
 
         let unique_attributes = raw_entity.get("unique_attributes").map(|unique_attributes| {
             unique_attributes.as_array().unwrap().iter().map(|unique_attribute| {
@@ -113,4 +118,114 @@ impl From<(EntityName, RawEntity, RawEntities)> for Entity {
         }
     }
         
+}
+
+
+#[derive(PartialEq, Debug, Serialize, Deserialize)]
+pub enum AttributeType {
+    String,
+    Uuid,
+    I32,
+    I64,
+    F32,
+    F64,
+    Boolean,
+    UTCDateTime,
+    Option(Box<AttributeType>),
+    Unknown(String),
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Serialize, Deserialize, strum_macros::EnumProperty)]
+pub enum PostgresAttributeType {
+
+    VARCHAR,
+    UUID,
+    INT,
+    BIGINT,
+    REAL,
+    DOUBLE_PRECISION,
+    BOOLEAN,
+    TIMESTAMP,
+    #[strum(props(is_nullable = "true"))]
+    OPTION(Box<PostgresAttributeType>),
+    UNKNOWN,
+}
+
+impl PostgresAttributeType {
+    pub fn is_nullable(&self) -> bool {
+        self.get_bool("is_nullable").unwrap_or(false)
+    }
+}
+impl From<&AttributeType> for PostgresAttributeType {
+    fn from(attribute_type: &AttributeType) -> Self {
+        match attribute_type {
+            AttributeType::String => PostgresAttributeType::VARCHAR,
+            AttributeType::Uuid => PostgresAttributeType::UUID,
+            AttributeType::I32 => PostgresAttributeType::INT,
+            AttributeType::I64 => PostgresAttributeType::BIGINT,
+            AttributeType::F32 => PostgresAttributeType::REAL,
+            AttributeType::F64 => PostgresAttributeType::DOUBLE_PRECISION,
+            AttributeType::Boolean => PostgresAttributeType::BOOLEAN,
+            AttributeType::UTCDateTime => PostgresAttributeType::TIMESTAMP,
+            AttributeType::Option(attribute_type) => PostgresAttributeType::OPTION(Box::new(Into::<PostgresAttributeType>::into(attribute_type.as_ref()))),
+            AttributeType::Unknown(_) => PostgresAttributeType::UNKNOWN,
+        }
+    }
+}
+
+
+impl ToString for PostgresAttributeType {
+    fn to_string(&self) -> String {
+        let attr_type = match self {
+            PostgresAttributeType::VARCHAR => "VARCHAR(255)".to_string(),
+            PostgresAttributeType::UUID => "UUID".to_string(),
+            PostgresAttributeType::INT => "INT".to_string(),
+            PostgresAttributeType::BIGINT => "BIGINT".to_string(),
+            PostgresAttributeType::REAL => "REAL".to_string(),
+            PostgresAttributeType::DOUBLE_PRECISION => "DOUBLE PRECISION".to_string(),
+            PostgresAttributeType::BOOLEAN => "BOOLEAN".to_string(),
+            PostgresAttributeType::TIMESTAMP => "TIMESTAMP".to_string(),
+            PostgresAttributeType::OPTION(attribute_type) => format!("{}", attribute_type.to_string()),
+            PostgresAttributeType::UNKNOWN => panic!("Unknown attribute type"),
+        };
+        attr_type + if self.is_nullable() { "" } else { " NOT NULL" }
+    }
+}
+
+impl AttributeType {
+    pub fn from_str(s: &str) -> AttributeType {
+        match s {
+            "String" => AttributeType::String,
+            "Uuid" => AttributeType::Uuid,
+            "i32" => AttributeType::I32,
+            "i64" => AttributeType::I64,
+            "f32" => AttributeType::F32,
+            "f64" => AttributeType::F64,
+            "bool" => AttributeType::Boolean,
+            "UTCDateTime" => AttributeType::UTCDateTime,
+            _ if s.starts_with("Option<") && s.ends_with(">") => {
+                let inner_type = s[7..s.len() - 1].to_string();
+                AttributeType::Option(Box::new(AttributeType::from_str(inner_type.as_str())))
+            }
+            _ => AttributeType::Unknown(s.to_string()),
+        }
+}
+}
+
+impl ToString for AttributeType {
+    fn to_string(&self) -> String {
+        match self {
+            AttributeType::String => "String".to_string(),
+            AttributeType::Uuid => "Uuid".to_string(),
+            AttributeType::I32 => "i32".to_string(),
+            AttributeType::I64 => "i64".to_string(),
+            AttributeType::F32 => "f32".to_string(),
+            AttributeType::F64 => "f64".to_string(),
+            AttributeType::Boolean => "bool".to_string(),
+            AttributeType::UTCDateTime => "UTCDateTime".to_string(),
+            AttributeType::Option(attribute_type) => format!("Option<{}>", attribute_type.to_string()),
+            AttributeType::Unknown(_) => panic!("Unknown attribute type"),
+        }
+    }
 }

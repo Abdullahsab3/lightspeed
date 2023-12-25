@@ -1,6 +1,4 @@
-use serde_json::Value;
-
-use crate::{utils::naming_convention::{to_snake_case, to_snake_case_plural}, models::ddr_req::AttributeType};
+use crate::{utils::naming_convention::{to_snake_case, to_snake_case_plural}, models::{entity::AttributeType, entity::Entity}};
 
 use super::{model_templates::ATTRIBUTE_TEMPLATE, import_templates::ImportGenerator};
 
@@ -87,72 +85,71 @@ use crate::services::ServicesState;
 
 
 pub trait ControllerGenerator: ImportGenerator {
-    fn generate_create_fn(&self, entity_name: &str) -> String {
+    fn generate_create_fn(&self, entity: &Entity) -> String {
         CONTROLLER_CREATE_ENTITY_TEMPLATE
-            .replace("{sc_entity_name}", to_snake_case(entity_name).as_str())
-            .replace("{sc_plural_entity}", to_snake_case_plural(entity_name).as_str())
-            .replace("{entity_name}", &entity_name)
+            .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
+            .replace("{entity_name}", &entity.name)
     }
 
-    fn generate_update_fn(&self, entity_name: &str) -> String {
+    fn generate_update_fn(&self, entity: &Entity) -> String {
         CONTROLLER_UPDATE_ENTITY_TEMPLATE
-            .replace("{sc_entity_name}", to_snake_case(entity_name).as_str())
-            .replace("{sc_plural_entity}", to_snake_case_plural(entity_name).as_str())
-            .replace("{entity_name}", &entity_name)
+            .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
+            .replace("{entity_name}", &entity.name)
     }
 
-    fn generate_delete_fn(&self, entity_name: &str) -> String {
+    fn generate_delete_fn(&self, entity: &Entity) -> String {
         CONTROLLER_DELETE_ENTITY_TEMPLATE
-            .replace("{sc_entity_name}", to_snake_case(entity_name).as_str())
-            .replace("{sc_plural_entity}", to_snake_case_plural(entity_name).as_str())
-            .replace("{entity_name}", &entity_name)
+            .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
+            .replace("{entity_name}", &entity.name)
     }
 
-    fn generate_create_payload(&self, entity_name: &str, entity: Value) -> String {
+    fn generate_create_payload(&self, entity: &Entity) -> String {
         let mut attributes = String::new();
-        for (key, value) in entity.as_object().unwrap() {
-            if key == "id" {
+        for (attribute_name, attribute_type) in &entity.attributes {
+            if attribute_name == &entity.primary_key {
                 continue;
             }
-            let attribute_type = AttributeType::from_str(value.as_str().unwrap());
+            
             attributes.push_str(&ATTRIBUTE_TEMPLATE
-                .replace("{attribute_name}", key)
+                .replace("{attribute_name}", &attribute_name)
                 .replace("{attribute_type}", &attribute_type.to_string()));
         }
         CONTROLLER_CREATE_ENTITY_PAYLOAD_TEMPLATE
-            .replace("{entity_name}", &entity_name)
+            .replace("{entity_name}", &entity.name)
             .replace("{attributes}", &attributes)
     }
 
-    fn generate_update_payload(&self, entity_name: &str, entity: Value) -> String {
+    fn generate_update_payload(&self, entity: &Entity) -> String {
         let mut attributes = String::new();
-        for (key, value) in entity.as_object().unwrap() {
-            if key == "id" {
+        for (attribute_name, attribute_type) in &entity.attributes {
+            if attribute_name == &entity.primary_key {
                 continue;
             }
-            let attribute_type = AttributeType::from_str(value.as_str().unwrap());
             let attribute_type_str = match attribute_type {
                 AttributeType::Option(t) => t.to_string(),
                 _ => attribute_type.to_string()
             };
             attributes.push_str(&CONTROLLER_UPDATE_ENTITY_ATTRIBUTE_TEMPLATE
-                .replace("{attribute_name}", key)
+                .replace("{attribute_name}", &attribute_name)
                 .replace("{attribute_type}", &attribute_type_str));
         }
         CONTROLLER_UPDATE_ENTITY_PAYLOAD_TEMPLATE
-            .replace("{entity_name}", &entity_name)
+            .replace("{entity_name}", &entity.name)
             .replace("{attributes}", &attributes)
     }
 
-    fn generate_controller(&self, entity_name: &str, entity: Value) -> String {
+    fn generate_controller(&self, entity: &Entity) -> String {
         let mut controller_functions = String::new();
-        controller_functions.push_str(&self.generate_create_fn(entity_name));
-        controller_functions.push_str(&self.generate_update_fn(entity_name));
-        controller_functions.push_str(&self.generate_delete_fn(entity_name));
+        controller_functions.push_str(&self.generate_create_fn(&entity));
+        controller_functions.push_str(&self.generate_update_fn(&entity));
+        controller_functions.push_str(&self.generate_delete_fn(&entity));
 
         let mut controller_payloads = String::new();
-        controller_payloads.push_str(&self.generate_create_payload(entity_name, entity.clone()));
-        controller_payloads.push_str(&self.generate_update_payload(entity_name, entity));
+        controller_payloads.push_str(&self.generate_create_payload(&entity));
+        controller_payloads.push_str(&self.generate_update_payload(&entity));
 
         CONTROLLER_FILE_TEMPLATE
             .replace("{controller_functions}", &controller_functions)

@@ -24,7 +24,7 @@ pub static MAIN_TEMPLATE_PATH: &str = "src/main.rs";
 pub trait RustMicroserviceGenerator: FileGenerator {
     fn generate_rust_microservice(&self, domain_driven_request: DomainDrivenRequest, out_dir: &str) -> io::Result<()>;
 }
-
+// !!!!!!!! TODO !!!!!!!! : Dont forget the routes
 pub struct RustMicroserviceGeneratorImpl {}
 impl FileGenerator for RustMicroserviceGeneratorImpl {}
 
@@ -161,4 +161,3 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
 
 
 }
-

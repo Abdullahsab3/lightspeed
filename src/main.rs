@@ -1,4 +1,6 @@
-use project_generators::rust::{RustMicroserviceGeneratorImpl, RustMicroserviceGenerator};
+use project_generators::rust::RustMicroserviceGeneratorImpl;
+use crate::project_generators::rust::RustMicroserviceGenerator;
+
 
 pub mod models;
 pub mod templates;
@@ -39,10 +41,9 @@ fn main() {
         ]
     }
     "#;
-    let ddr: models::ddr_req::DomainDrivenRequest = serde_json::from_str(test_json).unwrap();
-    let entities: Vec<models::entity::Entity> = ddr.generate_entities();
-    for entitiy in entities {
-        println!("{:#?}", entitiy);
-    }
+    let raw_ddr: models::ddr_req::RawDomainDrivenRequest = serde_json::from_str(test_json).unwrap();
+    let ddr = models::ddr_req::DomainDrivenRequest::from(raw_ddr);
+    let rust_microservice_generator = RustMicroserviceGeneratorImpl {};
+    rust_microservice_generator.generate_rust_microservice(ddr, "/Users/abdullahsabaaallil/test/generated_microservice").unwrap()
     
 }

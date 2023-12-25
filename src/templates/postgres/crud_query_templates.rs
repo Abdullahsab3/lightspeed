@@ -1,6 +1,4 @@
-use serde_json::Value;
-
-use crate::utils::naming_convention::to_snake_case_plural;
+use crate::{utils::naming_convention::to_snake_case_plural, models::entity::Entity};
 
 pub static CREATE_ENTITY_QUERY: &str = r#"
             INSERT INTO {entity_name}
@@ -24,12 +22,12 @@ pub static DELETE_ENTITY_QUERY: &str = r#"
 "#;
 
 pub trait CrudQueryGenerator {
-    fn generate_create_query(&self, entity_name: &str, entity_description: &Value) -> String {
-        let table_name = to_snake_case_plural(entity_name);
+    fn generate_create_query(&self, entity: &Entity) -> String {
+        let table_name = to_snake_case_plural(&entity.name);
         let mut entity_fields = Vec::new();
         let mut entity_values = Vec::new();
-        for (arg_num, (field_name, _)) in entity_description.as_object().unwrap().iter().enumerate() {
-            entity_fields.push(format!("{}", field_name));
+        for (arg_num, (attribute_name, _)) in entity.attributes.iter().enumerate() {
+            entity_fields.push(format!("{}", attribute_name));
             entity_values.push(format!("${}", arg_num + 1));
         }
         let entity_fields = entity_fields.join(", ");
@@ -39,17 +37,17 @@ pub trait CrudQueryGenerator {
             .replace("{entity_fields}", &entity_fields)
             .replace("{entity_values}", &entity_values)
     }
-    fn generate_update_query(&self, entity_name: &str, entity_description: &Value) -> String {
-        let table_name = to_snake_case_plural(entity_name);
+    fn generate_update_query(&self, entity: &Entity) -> String {
+        let table_name = to_snake_case_plural(&entity.name);
         let mut entity_fields = Vec::new();
-        for (arg_num, (field_name, _)) in entity_description.as_object().unwrap().iter().enumerate() {
-            entity_fields.push(format!("{} = ${}", field_name, arg_num + 1 ));
+        for (arg_num, (attribute_name, _)) in entity.attributes.iter().enumerate() {
+            entity_fields.push(format!("{} = ${}", attribute_name, arg_num + 1 ));
         }
         let entity_fields = entity_fields.join(", ");
         UPDATE_ENTITY_QUERY
             .replace("{entity_name}", &table_name)
             .replace("{entity_fields}", &entity_fields)
-            .replace("{entity_id}", &format!("${}", entity_description.as_object().unwrap().len() + 1))
+            .replace("{entity_id}", &format!("${}", entity.attributes.len() + 1))
     }
     fn generate_delete_query(&self, entity_name: &str) -> String {
         let table_name = to_snake_case_plural(entity_name);
