@@ -1,4 +1,4 @@
-use crate::utils::naming_convention::kebab_to_snake_case;
+use crate::utils::naming_convention::{kebab_to_snake_case, to_snake_case};
 
 pub static CARGO_TOML_PACKAGE_TEMPLATE: &str = r#"
 [package]
@@ -35,6 +35,6 @@ pub trait ProjectConfigGenerator {
     }
 
     fn generate_config_toml(&self, service_name: &str) -> String {
-        CONFIG_TOML_TEMPLATE.replace("{sc_service_name}", &kebab_to_snake_case(service_name))
+        CONFIG_TOML_TEMPLATE.replace("{sc_service_name}", &to_snake_case(service_name))
     }
 }

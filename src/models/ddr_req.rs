@@ -65,8 +65,8 @@ impl DomainDrivenRequest {
         self.entities.iter().map(|entity| entity.name.clone()).collect::<Vec<EntityName>>()
     }
 
-    pub fn generate_routes(&self) -> String {
-        AxumRoutesGenerator::generate_axum_routes_system(self, self.get_entity_names())
+    pub fn generate_routes_file(&self) -> String {
+        AxumRoutesGenerator::generate_routes_file(self, self.get_entity_names())
     }
 
     pub fn generate_controllers(&self) -> Vec<(&String, String)> {

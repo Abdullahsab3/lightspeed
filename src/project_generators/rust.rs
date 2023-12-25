@@ -9,6 +9,7 @@ use super::file_generator::FileGenerator;
 pub static CONFIG_TOML_PATH: &str = ".cargo/config.toml";
 pub static CARGO_TOML_PATH: &str = "Cargo.toml";
 pub static CONTROLLERS_DIR: &str = "src/controllers";
+pub static ROUTES_FILE_DIR: &str = "src/controllers/routes.rs";
 pub static MODELS_DIR: &str = "src/models";
 pub static HTTP_PATH: &str = "src/http/mod.rs";
 pub static SERVICES_DIR: &str = "src/services";
@@ -20,7 +21,6 @@ pub static RUST_STATIC_TEMPLATE_DIR: &str = "/rust/microservice";
 pub static LIB_STATIC_TEMPLATE_PATH: &str = "src/lib.rs";
 pub static LOG_REQUEST_TEMPLATE_PATH: &str = "src/log_request.rs";
 pub static MAIN_TEMPLATE_PATH: &str = "src/main.rs";
-
 pub trait RustMicroserviceGenerator: FileGenerator {
     fn generate_rust_microservice(&self, domain_driven_request: DomainDrivenRequest, out_dir: &str) -> io::Result<()>;
 }
@@ -71,13 +71,25 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
         /*
          * Generate controllers
          */
+        let controller_mods_static_template_path = rust_static_template_path.join("src/controllers/mod.rs");
+        let controller_mods_static_template = std::fs::read_to_string(controller_mods_static_template_path)?;
         let controller_mods_dynamic_template = domain_driven_request.generate_controller_mods();
-        self.generate_file(String::new(), controller_mods_dynamic_template, &format!("{}/{}/mod.rs", out_dir, CONTROLLERS_DIR))?;
+        self.generate_file(controller_mods_static_template, controller_mods_dynamic_template, &format!("{}/{}/mod.rs", out_dir, CONTROLLERS_DIR))?;
+        let system_controller_static_template_path = rust_static_template_path.join("src/controllers/system_controller.rs");
+        let system_controller_static_template = std::fs::read_to_string(system_controller_static_template_path)?;
+        self.generate_file(system_controller_static_template, String::new(), &format!("{}/{}/system_controller.rs", out_dir, CONTROLLERS_DIR))?;
         let controllers_dynamic_templates = domain_driven_request.generate_controllers();
         for (entity_name, controller) in controllers_dynamic_templates {
             let controller_path = format!("{}_controller.rs", to_snake_case_plural(&entity_name));
             self.generate_file(String::new(), controller, &format!("{}/{}/{}", out_dir, CONTROLLERS_DIR, controller_path))?;
         }
+
+        /*
+         * Generate the endpoints
+         */
+        let routes_file_dynamic_template = domain_driven_request.generate_routes_file();
+        self.generate_file(String::new(), routes_file_dynamic_template, &format!("{}/{}", out_dir, ROUTES_FILE_DIR))?;
+        
 
         /*
          * Generate http
