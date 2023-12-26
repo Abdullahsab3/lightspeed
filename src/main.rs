@@ -19,7 +19,7 @@ fn main() {
                     "id": "Uuid",
                     "name" : "String",
                     "surname": "String",
-                    "age": "Int",
+                    "age": "i32",
                     "email": "String",
                     "primary_key": "id",
                     "filter_by": ["name", "age", ["name", "surname"]] ,

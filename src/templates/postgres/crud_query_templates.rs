@@ -1,4 +1,4 @@
-use crate::{utils::naming_convention::to_snake_case_plural, models::entity::Entity};
+use crate::{utils::naming_convention::to_snake_case_plural, models::entity::{Entity, FilterBy, self}};
 
 pub static CREATE_ENTITY_QUERY: &str = r#"
             INSERT INTO {table_name}
@@ -12,6 +12,20 @@ pub static GET_ENTITY_QUERY: &str = r#"
             SELECT * FROM {table_name}
             WHERE {primary_key} = {entity_id};
 "#;
+
+pub static FILTER_BY_QUERY: &str = r#"
+            SELECT * FROM {table_name}
+            WHERE {filter_by_fields};
+"#;
+
+
+pub static FILTER_BY_PAGINATED_QUERY: &str = r#"
+            SELECT * FROM {table_name}
+            WHERE {filter_by_fields}
+            LIMIT {limit} OFFSET {offset};
+"#;
+
+pub static FILTER_BY_FIELD: &str = r#"{field_name} = ${arg_num}"#;
 
 pub static GET_PAGINATED_QUERY: &str = r#"
             SELECT * FROM {table_name}
@@ -70,6 +84,32 @@ pub trait CrudQueryGenerator {
             .replace("{table_name}", &table_name)
             .replace("{limit}", &limit)
             .replace("{offset}", &offset)
+    }
+
+    fn generate_filter_by_paginated_query(&self, entity: &Entity, filter_attr: &FilterBy) -> String {
+        let table_name = to_snake_case_plural(&entity.name);
+        let filter_by_fields = filter_attr.iter().enumerate().map(|(arg_num, field_name)| {
+            FILTER_BY_FIELD
+                .replace("{field_name}", &field_name)
+                .replace("{arg_num}", &format!("{}", arg_num + 1))
+        }).collect::<Vec<String>>().join(" AND ");
+        FILTER_BY_PAGINATED_QUERY
+                .replace("{table_name}", &table_name)
+                .replace("{filter_by_fields}", &filter_by_fields)
+                .replace("{limit}", &format!("${}", filter_attr.len() + 1))
+                .replace("{offset}", &format!("${}", filter_attr.len() + 2))
+    }
+
+    fn generate_filter_by_query(&self, entity: &Entity, filter_attr: &FilterBy) -> String {
+        let table_name = to_snake_case_plural(&entity.name);
+        let filter_by_fields = filter_attr.iter().enumerate().map(|(arg_num, field_name)| {
+            FILTER_BY_FIELD
+                .replace("{field_name}", &field_name)
+                .replace("{arg_num}", &format!("{}", arg_num + 1))
+        }).collect::<Vec<String>>().join(" AND ");
+        FILTER_BY_QUERY
+                .replace("{table_name}", &table_name)
+                .replace("{filter_by_fields}", &filter_by_fields)
     }
 
     fn generate_count_query(&self, entity: &Entity) -> String {

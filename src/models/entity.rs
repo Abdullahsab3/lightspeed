@@ -51,6 +51,11 @@ impl Entity {
     pub fn primary_key_type(&self) -> &AttributeType {
         &self.attributes.iter().find(|(attribute_name, _)| attribute_name == &self.primary_key).unwrap().1
     }
+
+    pub fn is_unique(&self, attribute_name: &str) -> bool {
+        self.unique_attributes.iter().any(|unique_attributes| unique_attributes.contains(&attribute_name.to_string()))
+    
+    }
 }
 
 impl From<(EntityName, RawEntity, RawEntities)> for Entity {
