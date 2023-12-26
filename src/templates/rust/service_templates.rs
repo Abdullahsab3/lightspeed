@@ -56,6 +56,35 @@ pub static GET_ENTITY_FN: &str = r##"
     }
 "##;
 
+pub static GET_PAGINATED_ENTITY_FN: &str = r##"
+    pub async fn get_{sc_plural_entity}(
+        &self,
+        page: i64,
+        limit: i64,
+    ) -> Result<PaginatedResult<{entity_name}>, Error> {
+        let {sc_plural_entity} = self.{sc_plural_entity}_table.get_{sc_plural_entity}(page, limit).await;
+        match {sc_plural_entity} {
+            Ok({sc_plural_entity}) => {
+                let total = self
+                    .{sc_plural_entity}_table
+                    .get_{sc_plural_entity}_count()
+                    .await
+                    .map_err(|_| {
+                        Error::{entity_name}FetchError("Could not fetch the total number of {sc_plural_entity}".to_string())
+                    })?;
+                Ok(PaginatedResult {
+                    results: {sc_plural_entity},
+                    total: total,
+                    page: page,
+                    page_size: limit,
+                })
+            }
+            Err(e) => Err(Error::{entity_name}FetchError(e.to_string())),
+        }
+    }
+
+"##;
+
 pub static UPDATE_ENTITY_FN: &str = r##"
     pub async fn update_{sc_entity_name}(
         &self,
@@ -93,6 +122,7 @@ use sqlx::{Pool, Postgres};
 {entity_imports}
 use crate::error::Error;
 use uuid::Uuid;
+use crate::models::PaginatedResult;
 
 pub struct {entity_plural}Service {
     {sc_entity_plural}_table: {entity_plural}Table,
@@ -183,6 +213,16 @@ pub trait ServiceGenerator: ImportGenerator {
             .replace("{table_name}", &table_name)
     }
 
+    fn generate_get_entities_paginated_fn(&self, entity_name: &str) -> String {
+        let sc_entity_name = to_snake_case(entity_name);
+        let sc_plural_entity = to_snake_case_plural(entity_name);
+        
+        GET_PAGINATED_ENTITY_FN
+            .replace("{sc_plural_entity}", &sc_plural_entity)
+            .replace("{entity_name}", &entity_name)
+            .replace("{sc_entity_name}", &sc_entity_name)
+    }
+
     fn generate_update_entity_fn(&self, entity_name: &str) -> String {
         let sc_entity_name = to_snake_case(entity_name);
         let table_name = to_snake_case_plural(entity_name);
@@ -216,6 +256,7 @@ pub trait ServiceGenerator: ImportGenerator {
 
         service_functions.push_str(&self.generate_create_entity_fn(entity_name));
         service_functions.push_str(&self.generate_get_entity_fn(entity_name));
+        service_functions.push_str(&self.generate_get_entities_paginated_fn(entity_name));
         service_functions.push_str(&self.generate_update_entity_fn(entity_name));
         service_functions.push_str(&self.generate_delete_entity_fn(entity_name));
 

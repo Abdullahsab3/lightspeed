@@ -13,6 +13,15 @@ pub static GET_ENTITY_QUERY: &str = r#"
             WHERE {primary_key} = {entity_id};
 "#;
 
+pub static GET_PAGINATED_QUERY: &str = r#"
+            SELECT * FROM {table_name}
+            LIMIT {limit} OFFSET {offset};
+"#;
+
+pub static COUNT_ENTITY_QUERY: &str = r#"
+            SELECT COUNT(*) FROM {table_name};
+"#;
+
 pub static UPDATE_ENTITY_QUERY: &str = r#"
             UPDATE {table_name}
             SET 
@@ -51,8 +60,22 @@ pub trait CrudQueryGenerator {
             .replace("{table_name}", &table_name)
             .replace("{primary_key}", &primary_key)
             .replace("{entity_id}", &entity_id)
-
     }
+
+    fn generate_get_paginated_query(&self, entity: &Entity) -> String {
+        let table_name = to_snake_case_plural(&entity.name);
+        let limit = &format!("${}", 1);
+        let offset = &format!("${}", 2);
+        GET_PAGINATED_QUERY
+            .replace("{table_name}", &table_name)
+            .replace("{limit}", &limit)
+            .replace("{offset}", &offset)
+    }
+
+    fn generate_count_query(&self, entity: &Entity) -> String {
+        COUNT_ENTITY_QUERY.replace("{table_name}", &to_snake_case_plural(&entity.name))
+    }
+    
     fn generate_update_query(&self, entity: &Entity) -> String {
         let table_name = to_snake_case_plural(&entity.name);
         let mut entity_fields = Vec::new();

@@ -32,6 +32,24 @@ pub async fn get_{sc_entity_name}(
 }
 "#;
 
+pub static CONTROLLER_GET_PAGINATED_ENTITIES_TEMPLATE: &str = r#"
+pub async fn get_{sc_plural_entity}(
+    Query(paginated_params): Query<PaginatedParams>,
+    State(services): State<Arc<ServicesState>>,
+) -> Result<impl IntoResponse> {
+    services
+        .{sc_plural_entity}_service
+        .get_{sc_plural_entity}(
+            paginated_params.page.unwrap_or(1),
+            paginated_params.page_size.unwrap_or(10)
+        )
+        .await
+        .map(|{sc_plural_entity}| {
+            (StatusCode::OK, Json({sc_plural_entity}))
+        })
+}
+"#;
+
 pub static CONTROLLER_CREATE_ENTITY_PAYLOAD_TEMPLATE: &str = r#"
 #[derive(Deserialize)]
 pub struct Add{entity_name}Payload {
@@ -81,6 +99,7 @@ pub async fn delete_{sc_entity_name}(
 pub static CONTROLLER_FILE_TEMPLATE: &str = r#"
 use std::sync::Arc;
 
+use crate::models::PaginatedParams;
 use axum::extract::Path;
 use axum::extract::Query;
 use axum::extract::State;
@@ -110,6 +129,13 @@ pub trait ControllerGenerator: ImportGenerator {
 
     fn generate_get_fn(&self, entity: &Entity) -> String {
         CONTROLLER_GET_ENTITY_TEMPLATE
+            .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
+            .replace("{entity_name}", &entity.name)
+    }
+
+    fn generate_get_paginated_fn(&self, entity: &Entity) -> String {
+        CONTROLLER_GET_PAGINATED_ENTITIES_TEMPLATE
             .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
             .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
             .replace("{entity_name}", &entity.name)
@@ -169,6 +195,7 @@ pub trait ControllerGenerator: ImportGenerator {
         let mut controller_functions = String::new();
         controller_functions.push_str(&self.generate_create_fn(&entity));
         controller_functions.push_str(&self.generate_get_fn(&entity));
+        controller_functions.push_str(&self.generate_get_paginated_fn(&entity));
         controller_functions.push_str(&self.generate_update_fn(&entity));
         controller_functions.push_str(&self.generate_delete_fn(&entity));
         

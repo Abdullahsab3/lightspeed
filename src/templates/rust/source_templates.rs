@@ -38,6 +38,39 @@ pub static GET_ENTITY_FN: &str = r##"
     }
 "##;
 
+pub static GET_PAGINATED_FN: &str = r##"
+    pub async fn get_{sc_plural_entity}(
+        &self,
+        page: i64,
+        limit: i64
+    ) -> Result<Vec<{entity_name}>, sqlx::Error> {
+        let {sc_plural_entity} = sqlx::query_as!(
+            {entity_name},
+            r#"{get_paginated_query}
+            "#,
+            limit,
+            (page - 1) * limit
+        )
+        .fetch_all(self.pool.as_ref())
+        .await?;
+        Ok({sc_plural_entity})
+    }
+"##;
+
+pub static GET_COUNT_FN: &str = r##"
+    pub async fn get_{sc_plural_entity}_count(
+        &self
+    ) -> Result<i64, sqlx::Error> {
+        let {sc_plural_entity}_count = sqlx::query!(
+            r#"{count_query}
+            "#
+        )
+        .fetch_one(self.pool.as_ref())
+        .await?;
+        Ok({sc_plural_entity}_count.count.unwrap())
+    }
+"##;
+
 pub static UPDATE_ENTITY_FN: &str = r##"
     pub async fn update_{sc_entity_name}(
         &self,
@@ -123,6 +156,24 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
             .replace("{get_query}", &get_query)
     }
 
+    fn generate_get_paginated_fn(&self, entity: &Entity) -> String {
+        let sc_entity_name = to_snake_case(&entity.name);
+        let get_paginated_query = self.generate_get_paginated_query(&entity);
+        GET_PAGINATED_FN
+            .replace("{sc_plural_entity}", &to_plural(&sc_entity_name))
+            .replace("{entity_name}", &entity.name)
+            .replace("{get_paginated_query}", &get_paginated_query)
+    }
+
+    fn generate_get_count_fn(&self, entity: &Entity) -> String {
+        let sc_entity_name = to_snake_case(&entity.name);
+        let count_query = self.generate_count_query(&entity);
+        GET_COUNT_FN
+            .replace("{sc_plural_entity}", &to_plural(&sc_entity_name))
+            .replace("{entity_name}", &entity.name)
+            .replace("{count_query}", &count_query)
+    }
+
     fn generate_update_fn(&self, entity: &Entity) -> String {
         let sc_entity_name = to_snake_case(&entity.name);
         let update_query = self.generate_update_query(entity);
@@ -152,6 +203,8 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
         let mut source_functions = String::new();
         source_functions.push_str(SourceGenerator::generate_create_fn(self, &entity).as_str());
         source_functions.push_str(SourceGenerator::generate_get_fn(self, &entity).as_str());
+        source_functions.push_str(SourceGenerator::generate_get_paginated_fn(self, &entity).as_str());
+        source_functions.push_str(SourceGenerator::generate_get_count_fn(self, &entity).as_str());
         source_functions.push_str(SourceGenerator::generate_update_fn(self, &entity).as_str());
         source_functions.push_str(SourceGenerator::generate_delete_fn(self, &entity).as_str());
 

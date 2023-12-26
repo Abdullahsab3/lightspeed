@@ -12,7 +12,7 @@ pub fn routes_system(services: Arc<ServicesState>) -> Router {
 "#;
 
 pub static AXUM_ENTITIY_COLLECTION_ROUTE_TEMPLATE: &str = r#"
-        .route("/v1/{sc_entity_name}s", post(create_{sc_entity_name}))"#;
+        .route("/v1/{sc_entity_name}s", get(get_{sc_entity_name}s).post(create_{sc_entity_name}))"#;
 
 pub static AXUM_ENTITY_ROUTE_TEMPLATE: &str = r#"
         .route("/v1/{sc_entity_name}s/:id", get(get_{sc_entity_name}).put(update_{sc_entity_name}).delete(delete_{sc_entity_name}))"#;
@@ -37,7 +37,8 @@ pub trait AxumRoutesGenerator: ImportGenerator {
         let mut axum_routes = String::new();
         for sc_entity_name in sc_entity_names{
             let entity_route = AXUM_ENTITY_ROUTE_TEMPLATE.replace("{sc_entity_name}", &sc_entity_name);
-            let entity_collection_route = AXUM_ENTITIY_COLLECTION_ROUTE_TEMPLATE.replace("{sc_entity_name}", &sc_entity_name);
+            let entity_collection_route = AXUM_ENTITIY_COLLECTION_ROUTE_TEMPLATE
+            .replace("{sc_entity_name}", &sc_entity_name);
             axum_routes.push_str(&entity_collection_route);
             axum_routes.push_str(&entity_route);
         }
