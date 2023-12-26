@@ -61,14 +61,14 @@ pub static FILTER_BY_FN: &str = r##"
     pub async fn get_{sc_plural_entity}_by_{most_specific_attribute}(
         &self,
         {filter_by_fields}
-    ) -> Result<Vec<{entity_name}>, sqlx::Error> {
+    ) -> Result<{entity_name}, sqlx::Error> {
         let {sc_plural_entity} = sqlx::query_as!(
             {entity_name},
             r#"{filter_by_query}
             "#,
             {filter_by_values}
         )
-        .fetch_all(self.pool.as_ref())
+        .fetch_one(self.pool.as_ref())
         .await?;
         Ok({sc_plural_entity})
     }
@@ -95,7 +95,23 @@ pub static FILTER_BY_PAGINATED_FN: &str = r##"
     }
 "##;
 
-pub static FILTER_BY_FIELD: &str = r#"{attribute_name}: {attribute_type}"#;
+pub static FILTER_BY_PAGINATED_COUNT_FN: &str = r##"
+    pub async fn filter_{sc_plural_entity}_by_{most_specific_attribute}_count(
+        &self,
+        {filter_by_fields}
+    ) -> Result<i64, sqlx::Error> {
+        let {sc_plural_entity}_count = sqlx::query!(
+            r#"{filter_by_paginated_count_query}
+            "#,
+            {filter_by_values}
+        )
+        .fetch_one(self.pool.as_ref())
+        .await?;
+        Ok({sc_plural_entity}_count.count.unwrap())
+    }
+"##;
+
+pub static FILTER_BY_FIELD: &str = r#"{attribute_name}: &{attribute_type}"#;
 
 pub static GET_COUNT_FN: &str = r##"
     pub async fn get_{sc_plural_entity}_count(
@@ -214,7 +230,7 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
             let filter_by_fields = filter_by.iter().map(|field_name| {
                 FILTER_BY_FIELD
                 .replace("{attribute_name}", &field_name)
-                .replace("{attribute_type}", &entity.attributes.iter().find(|(attribute_name, _)| {println!("attr name: {}, field name: {}", attribute_name, field_name); attribute_name == field_name}).unwrap().1.to_string())
+                .replace("{attribute_type}", &entity.attributes.iter().find(|(attribute_name, _)| attribute_name == field_name).unwrap().1.to_string())
             }).collect::<Vec<String>>().join("\n, ");
             if filter_by.iter().filter(|field_name| entity.is_unique(&field_name)).count() > 0 {
                 let filter_by_query = self.generate_filter_by_query(&entity, &filter_by);
@@ -240,6 +256,27 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
 
             }
 
+        }).collect::<Vec<String>>().join("\n")
+    }
+
+    fn generate_filter_by_paginated_count_fn(&self, entity: &Entity) -> String {
+        entity.filter_by.iter().filter(|filter_by| filter_by.iter().filter(|field_name| entity.is_unique(&field_name)).count() == 0).map(|filter_by| {
+            let filter_by_values = filter_by.iter().map(|field_name| {
+                format!("&{}", field_name)
+            }).collect::<Vec<String>>().join(", ");
+            let filter_by_fields = filter_by.iter().map(|field_name| {
+                FILTER_BY_FIELD
+                .replace("{attribute_name}", &field_name)
+                .replace("{attribute_type}", &entity.attributes.iter().find(|(attribute_name, _)| attribute_name == field_name).unwrap().1.to_string())
+            }).collect::<Vec<String>>().join("\n, ");
+            let filter_by_paginated_count_query = self.generate_filter_by_paginated_count_query(&entity, &filter_by);
+            FILTER_BY_PAGINATED_COUNT_FN
+                .replace("{sc_plural_entity}", &to_plural(&to_snake_case(&entity.name)))
+                .replace("{entity_name}", &entity.name)
+                .replace("{filter_by_paginated_count_query}", &filter_by_paginated_count_query)
+                .replace("{filter_by_values}", &filter_by_values)
+                .replace("{most_specific_attribute}", &filter_by.last().unwrap())
+                .replace("{filter_by_fields}", &filter_by_fields)
         }).collect::<Vec<String>>().join("\n")
     }
 
@@ -283,6 +320,7 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
         source_functions.push_str(SourceGenerator::generate_get_fn(self, &entity).as_str());
         source_functions.push_str(SourceGenerator::generate_get_paginated_fn(self, &entity).as_str());
         source_functions.push_str(SourceGenerator::generate_filter_by_fn(self, &entity).as_str());
+        source_functions.push_str(SourceGenerator::generate_filter_by_paginated_count_fn(self, &entity).as_str());
         source_functions.push_str(SourceGenerator::generate_get_count_fn(self, &entity).as_str());
         source_functions.push_str(SourceGenerator::generate_update_fn(self, &entity).as_str());
         source_functions.push_str(SourceGenerator::generate_delete_fn(self, &entity).as_str());

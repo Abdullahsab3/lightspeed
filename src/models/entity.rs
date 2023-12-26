@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use strum::EnumProperty;
@@ -53,7 +55,9 @@ impl Entity {
     }
 
     pub fn is_unique(&self, attribute_name: &str) -> bool {
-        self.unique_attributes.iter().any(|unique_attributes| unique_attributes.contains(&attribute_name.to_string()))
+        let res = self.unique_attributes.iter().any(|unique_attributes| unique_attributes.contains(&attribute_name.to_string()));
+        println!("is_unique: {} {}", attribute_name, res);
+        res
     
     }
 }
@@ -222,19 +226,22 @@ impl AttributeType {
 }
 }
 
-impl ToString for AttributeType {
-    fn to_string(&self) -> String {
-        match self {
-            AttributeType::String => "String".to_string(),
-            AttributeType::Uuid => "Uuid".to_string(),
-            AttributeType::I32 => "i32".to_string(),
-            AttributeType::I64 => "i64".to_string(),
-            AttributeType::F32 => "f32".to_string(),
-            AttributeType::F64 => "f64".to_string(),
-            AttributeType::Boolean => "bool".to_string(),
-            AttributeType::UTCDateTime => "UTCDateTime".to_string(),
-            AttributeType::Option(attribute_type) => format!("Option<{}>", attribute_type.to_string()),
-            AttributeType::Unknown(_) => panic!("Unknown attribute type"),
-        }
+impl Display for AttributeType {
+
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            let str = match self {
+                AttributeType::String => "String".to_string(),
+                AttributeType::Uuid => "Uuid".to_string(),
+                AttributeType::I32 => "i32".to_string(),
+                AttributeType::I64 => "i64".to_string(),
+                AttributeType::F32 => "f32".to_string(),
+                AttributeType::F64 => "f64".to_string(),
+                AttributeType::Boolean => "bool".to_string(),
+                AttributeType::UTCDateTime => "UTCDateTime".to_string(),
+                AttributeType::Option(attribute_type) => format!("Option<{}>", attribute_type.to_string()),
+                AttributeType::Unknown(_) => panic!("Unknown attribute type"),
+            };
+            write!(f, "{}", str)
     }
 }

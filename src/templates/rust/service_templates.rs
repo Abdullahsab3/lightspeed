@@ -1,4 +1,4 @@
-use crate::utils::naming_convention::{to_snake_case, to_snake_case_plural, to_plural};
+use crate::{utils::naming_convention::{to_snake_case, to_snake_case_plural, to_plural}, models::entity::Entity};
 
 use super::{import_templates::ImportGenerator, model_templates::ATTRIBUTE_TEMPLATE};
 
@@ -84,6 +84,52 @@ pub static GET_PAGINATED_ENTITY_FN: &str = r##"
     }
 
 "##;
+
+pub static FILTER_BY_FN: &str = r##"
+    pub async fn get_{sc_plural_entity}_by_{most_specific_attribute}(
+        &self,
+        {filter_by_fields}
+    ) -> Result<{entity_name}, Error> {
+        let {sc_entity_name} = self.{sc_plural_entity}_table.get_{sc_plural_entity}_by_{most_specific_attribute}({filter_by_args}).await;
+        match {sc_entity_name} {
+            Ok({sc_entity_name}) => {
+                Ok({sc_entity_name})
+            }
+            Err(e) => Err(Error::{entity_name}FetchError(e.to_string())),
+        }
+    }
+"##;
+
+pub static FILTER_BY_PAGINATED_FN: &str = r##"
+    pub async fn filter_{sc_plural_entity}_by_{most_specific_attribute}(
+        &self,
+        {filter_by_fields},
+        page: i64,
+        limit: i64,
+    ) -> Result<PaginatedResult<{entity_name}>, Error> {
+        let {sc_plural_entity} = self.{sc_plural_entity}_table.filter_{sc_plural_entity}_by_{most_specific_attribute}({filter_by_args}, page, limit).await;
+        match {sc_plural_entity} {
+            Ok({sc_plural_entity}) => {
+                let total = self
+                    .{sc_plural_entity}_table
+                    .filter_{sc_plural_entity}_by_{most_specific_attribute}_count({filter_by_args})
+                    .await
+                    .map_err(|_| {
+                        Error::{entity_name}FetchError("Could not fetch the total number of {sc_plural_entity}".to_string())
+                    })?;
+                Ok(PaginatedResult {
+                    results: {sc_plural_entity},
+                    total: total,
+                    page: page,
+                    page_size: limit,
+                })
+            }
+            Err(e) => Err(Error::{entity_name}FetchError(e.to_string())),
+        }
+    }
+"##;
+
+pub static FILTER_BY_FIELD: &str = r#"{attribute_name}: {attribute_type}"#;
 
 pub static UPDATE_ENTITY_FN: &str = r##"
     pub async fn update_{sc_entity_name}(
@@ -213,6 +259,37 @@ pub trait ServiceGenerator: ImportGenerator {
             .replace("{table_name}", &table_name)
     }
 
+    fn generate_filter_by_fn(&self, entity: &Entity) -> String {
+        entity.filter_by.iter().map(|filter_by| {
+            let most_specific_attribute = filter_by.last().unwrap();
+            let filter_by_fields = filter_by.iter().map(|field_name| {
+                FILTER_BY_FIELD
+                    .replace("{attribute_name}", &field_name)
+                    .replace("{attribute_type}", &entity.attributes.iter().find(|(attribute_name, _)| attribute_name == field_name).unwrap().1.to_string())
+            }).collect::<Vec<String>>().join(",\n");
+            let filter_by_args = filter_by.iter().map(|field_name| "&".to_string() + field_name).collect::<Vec<String>>().join(",");
+            if filter_by.iter().filter(|field_name| entity.is_unique(&field_name)).count() > 0 {
+                FILTER_BY_FN
+                .replace("{sc_plural_entity}", &to_snake_case_plural(&entity.name))
+                .replace("{entity_name}", &entity.name)
+                .replace("{sc_entity_name}", &to_snake_case(&entity.name))
+                .replace("{most_specific_attribute}", &most_specific_attribute)
+                .replace("{filter_by_fields}", &filter_by_fields)
+                .replace("{filter_by_args}", &filter_by_args)
+            } else {
+                FILTER_BY_PAGINATED_FN
+                .replace("{sc_plural_entity}", &to_snake_case_plural(&entity.name))
+                .replace("{entity_name}", &entity.name)
+                .replace("{sc_entity_name}", &to_snake_case(&entity.name))
+                .replace("{most_specific_attribute}", &most_specific_attribute)
+                .replace("{filter_by_fields}", &filter_by_fields)
+                .replace("{filter_by_args}", &filter_by_args)
+            }
+            
+        }).collect::<Vec<String>>().join("\n")
+        
+    }
+
     fn generate_get_entities_paginated_fn(&self, entity_name: &str) -> String {
         let sc_entity_name = to_snake_case(entity_name);
         let sc_plural_entity = to_snake_case_plural(entity_name);
@@ -243,27 +320,28 @@ pub trait ServiceGenerator: ImportGenerator {
             .replace("{table_name}", &table_name)
     }
 
-    fn generate_service(&self, entity_name: &str) -> String {
+    fn generate_service(&self, entity: &Entity) -> String {
         let mut entity_imports = String::new();
-        entity_imports.push_str(&self.generate_model_imports(entity_name));
-        entity_imports.push_str(&self.generate_source_imports(entity_name));
-        entity_imports.push_str(&self.generate_controller_imports(entity_name));
+        entity_imports.push_str(&self.generate_model_imports(entity.name.as_str()));
+        entity_imports.push_str(&self.generate_source_imports(entity.name.as_str()));
+        entity_imports.push_str(&self.generate_controller_imports(entity.name.as_str()));
 
         let mut service_functions = String::new();
-        service_functions.push_str(&self.generate_verify_entity_creation_constraints_fn(entity_name));
-        service_functions.push_str(&self.generate_verify_entity_update_constraints_fn(entity_name));
-        service_functions.push_str(&self.generate_verify_entity_delete_constraints_fn(entity_name));
+        service_functions.push_str(&self.generate_verify_entity_creation_constraints_fn(entity.name.as_str()));
+        service_functions.push_str(&self.generate_verify_entity_update_constraints_fn(entity.name.as_str()));
+        service_functions.push_str(&self.generate_verify_entity_delete_constraints_fn(entity.name.as_str()));
 
-        service_functions.push_str(&self.generate_create_entity_fn(entity_name));
-        service_functions.push_str(&self.generate_get_entity_fn(entity_name));
-        service_functions.push_str(&self.generate_get_entities_paginated_fn(entity_name));
-        service_functions.push_str(&self.generate_update_entity_fn(entity_name));
-        service_functions.push_str(&self.generate_delete_entity_fn(entity_name));
+        service_functions.push_str(&self.generate_create_entity_fn(entity.name.as_str()));
+        service_functions.push_str(&self.generate_get_entity_fn(entity.name.as_str()));
+        service_functions.push_str(&self.generate_get_entities_paginated_fn(entity.name.as_str()));
+        service_functions.push_str(&self.generate_filter_by_fn(entity));
+        service_functions.push_str(&self.generate_update_entity_fn(entity.name.as_str()));
+        service_functions.push_str(&self.generate_delete_entity_fn(entity.name.as_str()));
 
         SERVICE_FILE_TEMPLATE
             .replace("{entity_imports}", &entity_imports)
-            .replace("{entity_plural}", &to_plural(entity_name))
-            .replace("{sc_entity_plural}", &to_snake_case_plural(entity_name))
+            .replace("{entity_plural}", &to_plural(entity.name.as_str()))
+            .replace("{sc_entity_plural}", &to_snake_case_plural(entity.name.as_str()))
             .replace("{service_functions}", &service_functions)
     }
 

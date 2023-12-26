@@ -22,7 +22,7 @@ fn main() {
                     "age": "i32",
                     "email": "String",
                     "primary_key": "id",
-                    "filter_by": ["name", "age", ["name", "surname"]] ,
+                    "filter_by": ["name", "age", ["name", "surname"], "email"] ,
                     "unique_attributes": ["email"]
                 }
             },

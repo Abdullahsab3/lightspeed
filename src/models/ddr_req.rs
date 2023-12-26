@@ -109,12 +109,12 @@ impl DomainDrivenRequest {
 
     }
 
-    pub fn generate_services(&self) -> Vec<(String, String)> {
+    pub fn generate_services(&self) -> Vec<(&String, String)> {
         let mut service = Vec::new();
         // extract entities in key value pairs
-        for entity_name in self.get_entity_names()  {
-            let service_fn = ServiceGenerator::generate_service(self, &entity_name.to_string());
-            service.push((entity_name, service_fn));
+        for entity in &self.entities  {
+            let service_fn = ServiceGenerator::generate_service(self, &entity);
+            service.push((&entity.name, service_fn));
         }
         service
     }
