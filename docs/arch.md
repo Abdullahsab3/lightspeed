@@ -16,7 +16,8 @@ Generating a reactive microservice can look like this:
                 "age": "Int",
                 "email": "String",
                 "primary_key": "id",
-                "filter_by": ["name", "age", ["name", "surname"]] 
+                "filter_by": ["name", "age", ["name", "surname"]],
+                "unique_attributes": ["email"]
                 // composite filters are filtered like this: major, minor, subminor, etc.
             }
         },
