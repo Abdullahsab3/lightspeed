@@ -5,7 +5,7 @@ use super::{model_templates::ModelGenerator, import_templates::ImportGenerator};
 pub static CREATE_ENTITY_FN: &str = r##"
     pub async fn create_{sc_entity_name}(
         &self,
-        {sc_entity_name}: {entity_name}
+        {sc_entity_name}: &{entity_name}
     ) -> Result<{entity_name}, sqlx::Error> {
         let mut transaction = self.pool.begin().await?;
         let new_{sc_entity_name} = sqlx::query_as!(
@@ -21,10 +21,27 @@ pub static CREATE_ENTITY_FN: &str = r##"
     }
 "##;
 
+pub static GET_ENTITY_FN: &str = r##"
+    pub async fn get_{sc_entity_name}(
+        &self,
+        {primary_key}: &{primary_key_type}
+    ) -> Result<{entity_name}, sqlx::Error> {
+        let {sc_entity_name} = sqlx::query_as!(
+            {entity_name},
+            r#"{get_query}
+            "#,
+            {primary_key}
+        )
+        .fetch_one(self.pool.as_ref())
+        .await?;
+        Ok({sc_entity_name})
+    }
+"##;
+
 pub static UPDATE_ENTITY_FN: &str = r##"
     pub async fn update_{sc_entity_name}(
         &self,
-        {sc_entity_name}: {entity_name}
+        {sc_entity_name}: &{entity_name}
     ) -> Result<{entity_name}, sqlx::Error> {
         let mut transaction = self.pool.begin().await?;
         let updated_{sc_entity_name} = sqlx::query_as!(
@@ -43,14 +60,14 @@ pub static UPDATE_ENTITY_FN: &str = r##"
 pub static DELETE_ENTITY_FN: &str = r##"
     pub async fn delete_{sc_entity_name}(
         &self,
-        {sc_entity_name}_id: Uuid
+        {primary_key}: &{primary_key_type}
     ) -> Result<(), sqlx::Error> {
         let mut transaction = self.pool.begin().await?;
         sqlx::query_as!(
             {entity_name},
             r#"{delete_query}
             "#,
-            {sc_entity_name}_id
+            {primary_key}
         )
         .execute(transaction.as_mut())
         .await?;
@@ -87,10 +104,23 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
         let create_query = self.generate_create_query(&entity);
         let entity_values = self.generate_entity_value_accessors(&entity);
         CREATE_ENTITY_FN
+            .replace("{primary_key}", &entity.primary_key)
+            .replace("{primary_key_type}", &entity.primary_key_type().to_string())
             .replace("{sc_entity_name}", &sc_entity_name)
             .replace("{entity_name}", &entity.name)
             .replace("{create_query}", &create_query)
             .replace("{entity_values}", &entity_values)
+    }
+
+    fn generate_get_fn(&self, entity: &Entity) -> String {
+        let sc_entity_name = to_snake_case(&entity.name);
+        let get_query = self.generate_get_query(&entity);
+        GET_ENTITY_FN
+            .replace("{primary_key}", &entity.primary_key)
+            .replace("{primary_key_type}", &entity.primary_key_type().to_string())
+            .replace("{sc_entity_name}", &sc_entity_name)
+            .replace("{entity_name}", &entity.name)
+            .replace("{get_query}", &get_query)
     }
 
     fn generate_update_fn(&self, entity: &Entity) -> String {
@@ -109,6 +139,8 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
         let sc_entity_name = to_snake_case(&entity.name);
         let delete_query = self.generate_delete_query(&entity);
         DELETE_ENTITY_FN
+            .replace("{primary_key}", &entity.primary_key)
+            .replace("{primary_key_type}", &entity.primary_key_type().to_string())
             .replace("{sc_entity_name}", &sc_entity_name)
             .replace("{entity_name}", &entity.name)
             .replace("{delete_query}", &delete_query)
@@ -119,6 +151,7 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
 
         let mut source_functions = String::new();
         source_functions.push_str(SourceGenerator::generate_create_fn(self, &entity).as_str());
+        source_functions.push_str(SourceGenerator::generate_get_fn(self, &entity).as_str());
         source_functions.push_str(SourceGenerator::generate_update_fn(self, &entity).as_str());
         source_functions.push_str(SourceGenerator::generate_delete_fn(self, &entity).as_str());
 

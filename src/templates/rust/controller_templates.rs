@@ -17,12 +17,28 @@ pub async fn create_{sc_entity_name}(
 }
 "#;
 
+pub static CONTROLLER_GET_ENTITY_TEMPLATE: &str = r#"
+pub async fn get_{sc_entity_name}(
+    Path(id): Path<Uuid>,
+    State(services): State<Arc<ServicesState>>,
+) -> Result<impl IntoResponse> {
+    services
+        .{sc_plural_entity}_service
+        .get_{sc_entity_name}(id)
+        .await
+        .map(|{sc_entity_name}| {
+            (StatusCode::OK, Json({sc_entity_name}))
+        })
+}
+"#;
+
 pub static CONTROLLER_CREATE_ENTITY_PAYLOAD_TEMPLATE: &str = r#"
 #[derive(Deserialize)]
 pub struct Add{entity_name}Payload {
     {attributes}
 }
 "#;
+
 
 pub static CONTROLLER_UPDATE_ENTITY_TEMPLATE: &str = r#"
 pub async fn update_{sc_entity_name}(
@@ -92,6 +108,13 @@ pub trait ControllerGenerator: ImportGenerator {
             .replace("{entity_name}", &entity.name)
     }
 
+    fn generate_get_fn(&self, entity: &Entity) -> String {
+        CONTROLLER_GET_ENTITY_TEMPLATE
+            .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
+            .replace("{entity_name}", &entity.name)
+    }
+
     fn generate_update_fn(&self, entity: &Entity) -> String {
         CONTROLLER_UPDATE_ENTITY_TEMPLATE
             .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
@@ -121,6 +144,7 @@ pub trait ControllerGenerator: ImportGenerator {
             .replace("{entity_name}", &entity.name)
             .replace("{attributes}", &attributes)
     }
+    
 
     fn generate_update_payload(&self, entity: &Entity) -> String {
         let mut attributes = String::new();
@@ -144,8 +168,10 @@ pub trait ControllerGenerator: ImportGenerator {
     fn generate_controller(&self, entity: &Entity) -> String {
         let mut controller_functions = String::new();
         controller_functions.push_str(&self.generate_create_fn(&entity));
+        controller_functions.push_str(&self.generate_get_fn(&entity));
         controller_functions.push_str(&self.generate_update_fn(&entity));
         controller_functions.push_str(&self.generate_delete_fn(&entity));
+        
 
         let mut controller_payloads = String::new();
         controller_payloads.push_str(&self.generate_create_payload(&entity));

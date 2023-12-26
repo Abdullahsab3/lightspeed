@@ -16,6 +16,22 @@ pub static CLIENT_ENTITY_UPDATE_ERROR_TEMPLATE: &str = r#"{usc_entity_name}_UPDA
 pub static CLIENT_ENTITY_DELETION_ERROR_TEMPLATE: &str = r#"{usc_entity_name}_DELETION_ERROR"#;
 pub static CLIENT_ENTITY_FETCH_ERROR_TEMPLATE: &str = r#"{usc_entity_name}_FETCH_ERROR"#;
 
+pub static STATIC_ERROR_ENUMS_TEMPLATE: &str = r#"
+    ConfigMissing(&'static str),
+    ConfigWrongFormat(&'static str),
+    DatabaseConnectionError(String)
+"#;
+
+pub static STATIC_CLIENT_ERROR_ENUM_TEMPLATE: &str = r#"
+    SERVICE_ERROR
+"#;
+
+
+pub static STATIC_ERROR_TO_CLIENT_ERROR_TEMPLATE: &str = r#"
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::SERVICE_ERROR),"#;
+
+
+
 pub static ERROR_TO_CLIENT_ERROR_EXIST_TEMPLATE: &str = r#"
             Error::{entity_name}AlreadyExists => (StatusCode::CONFLICT, ClientError::{usc_entity_name}_ALREADY_EXISTS),"#;
 pub static ERROR_TO_CLIENT_ERROR_CREATION_TEMPLATE: &str = r#"
@@ -39,6 +55,7 @@ impl Error {
 }
 "#;
 
+
 pub trait ErrorGenerator : ModelGenerator {
     fn generate_server_error_enums(&self, entity_names: Vec<String>) -> String {
         let mut error_enums: Vec<String> = Vec::new();
@@ -49,7 +66,9 @@ pub trait ErrorGenerator : ModelGenerator {
             error_enums.push(ENTITY_UPDATE_ERROR_TEMPLATE.replace("{entity_name}", &entity_name));
             error_enums.push(ENTITY_DELETION_ERROR_TEMPLATE.replace("{entity_name}", &entity_name));
             error_enums.push(ENTITY_FETCH_ERROR_TEMPLATE.replace("{entity_name}", &entity_name));
+            
         }
+        error_enums.push(STATIC_ERROR_ENUMS_TEMPLATE.to_string());
         self.generate_enum("Error", error_enums)
     }
 
@@ -64,6 +83,7 @@ pub trait ErrorGenerator : ModelGenerator {
             error_enums.push(CLIENT_ENTITY_DELETION_ERROR_TEMPLATE.replace("{usc_entity_name}", &usc_entity_name));
             error_enums.push(CLIENT_ENTITY_FETCH_ERROR_TEMPLATE.replace("{usc_entity_name}", &usc_entity_name));
         }
+        error_enums.push(STATIC_CLIENT_ERROR_ENUM_TEMPLATE.to_string());
         self.generate_enum("ClientError", error_enums)
     }
 
@@ -90,6 +110,7 @@ pub trait ErrorGenerator : ModelGenerator {
                 .replace("{entity_name}", &entity_name)
                 .replace("{usc_entity_name}", &usc_entity_name));
         }
+        error_to_client_errors.push_str(STATIC_ERROR_TO_CLIENT_ERROR_TEMPLATE);
         ERROR_IMPL_TEMPLATE.replace("{error_to_client_errors}", &error_to_client_errors)
     }
 

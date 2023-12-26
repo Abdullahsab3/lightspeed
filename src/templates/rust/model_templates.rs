@@ -10,7 +10,7 @@ pub struct {struct_name} {
 "#;
 
 pub static NEW_FROM_PAYLOAD_TEMPLATE: &str = r#"
-    pub fn new(payload: &Add{entity_name}Payload) -> Result<Self, Error> {
+    pub fn new(payload: Add{entity_name}Payload) -> Result<Self, Error> {
         Ok(Self {
             id: Uuid::new_v4(),
             {new_attribute_from_payload}
@@ -22,7 +22,7 @@ pub static NEW_ATTRIBUTE_FROM_PAYLOAD: &str = r#"
             {attribute_name}: payload.{attribute_name},"#;
 
 pub static UPDATE_FROM_PAYLOAD_TEMPLATE: &str = r#"
-    pub fn update(&mut self, payload: &Update{entity_name}Payload) -> Result<Self, Error> {
+    pub fn update(self, payload: Update{entity_name}Payload) -> Result<Self, Error> {
         Ok(Self {
             id: self.id,
             {update_attribute_from_payload}

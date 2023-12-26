@@ -6,10 +6,12 @@ pub struct PaginatedParams {
     pub page_size: Option<i64>,
 }
 
-#[derive(Serialize, ToSchema, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct PaginatedResult<T: Serialize> {
     pub results: Vec<T>,
     pub total: i64,
     pub page: i64,
     pub page_size: i64,
 }
+
+pub mod config;

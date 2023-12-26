@@ -3,8 +3,8 @@ Lightspeed: Speed up the development process and generate CRUD based (reactive) 
 
 
 # TODO (MVP)
-- Add support for reading operations
-- Add support for filtering operations
+- Add support for reading operations -> In progress
+- Add support for filtering operations -> In progress
 - Add support for kafka events
 - Add support for foreign keys, primary keys, unique keys -> In progress
 - Add support for IaC (Kubernetes & Docker)
@@ -17,4 +17,5 @@ Lightspeed: Speed up the development process and generate CRUD based (reactive) 
 - Support for custom indentation and linting. Everything related to this is at this point hardcoded.
 - Optimisations: Incremental computation for example can speed up stuff.
 - Support for self reference within an entity (if you have nested entities like categories for example)
+- Code injection in existing services. If you want to add a new entity to a service for instance. Incremental computation can also be interesting here to apply.
 - And a whole list of other things :)

@@ -34,12 +34,24 @@ pub static CREATE_ENTITY_FN: &str = r##"
         &self,
         {sc_entity_name}_payload: Add{entity_name}Payload
     ) -> Result<{entity_name}, Error> {
-        let {sc_entity_name} = {entity_name}::new(&{sc_entity_name}_payload)?;
+        let {sc_entity_name} = {entity_name}::new({sc_entity_name}_payload)?;
         self.verify_{sc_entity_name}_creation_constraints(&{sc_entity_name}).await?;
 
-        match self.{table_name}_table.create_{sc_entity_name}({sc_entity_name}).await {
+        match self.{table_name}_table.create_{sc_entity_name}(&{sc_entity_name}).await {
             Ok({sc_entity_name}) => Ok({sc_entity_name}),
             Err(e) => Err(Error::{entity_name}CreationError(e.to_string()))
+        }
+    }
+"##;
+
+pub static GET_ENTITY_FN: &str = r##"
+    pub async fn get_{sc_entity_name}(
+        &self,
+        {sc_entity_name}_id: Uuid
+    ) -> Result<{entity_name}, Error> {
+        match self.{table_name}_table.get_{sc_entity_name}(&{sc_entity_name}_id).await {
+            Ok({sc_entity_name}) => Ok({sc_entity_name}),
+            Err(e) => Err(Error::{entity_name}FetchError(e.to_string()))
         }
     }
 "##;
@@ -50,8 +62,7 @@ pub static UPDATE_ENTITY_FN: &str = r##"
         {sc_entity_name}_id: Uuid,
         {sc_entity_name}_payload: Update{entity_name}Payload
     ) -> Result<{entity_name}, Error> {
-        let mut {sc_entity_name} = self.get_{sc_entity_name}({sc_entity_name}_id).await?;
-        {sc_entity_name}.update({sc_entity_name}_payload)?;
+        let {sc_entity_name} = self.get_{sc_entity_name}({sc_entity_name}_id).await?.update({sc_entity_name}_payload)?;
         self.verify_{sc_entity_name}_update_constraints(&{sc_entity_name}).await?;
 
         match self.{table_name}_table.update_{sc_entity_name}(&{sc_entity_name}).await {
@@ -68,7 +79,7 @@ pub static DELETE_ENTITY_FN: &str = r##"
     ) -> Result<(), Error> {
         self.verify_{sc_entity_name}_delete_constraints({sc_entity_name}_id).await?;
 
-        match self.{table_name}_table.delete_{sc_entity_name}({sc_entity_name}_id).await {
+        match self.{table_name}_table.delete_{sc_entity_name}(&{sc_entity_name}_id).await {
             Ok(_) => Ok(()),
             Err(e) => Err(Error::{entity_name}DeleteError(e.to_string()))
         }
@@ -162,6 +173,16 @@ pub trait ServiceGenerator: ImportGenerator {
             .replace("{table_name}", &table_name)
     }
 
+    fn generate_get_entity_fn(&self, entity_name: &str) -> String {
+        let sc_entity_name = to_snake_case(entity_name);
+        let table_name = to_snake_case_plural(entity_name);
+        
+        GET_ENTITY_FN
+            .replace("{sc_entity_name}", &sc_entity_name)
+            .replace("{entity_name}", &entity_name)
+            .replace("{table_name}", &table_name)
+    }
+
     fn generate_update_entity_fn(&self, entity_name: &str) -> String {
         let sc_entity_name = to_snake_case(entity_name);
         let table_name = to_snake_case_plural(entity_name);
@@ -194,6 +215,7 @@ pub trait ServiceGenerator: ImportGenerator {
         service_functions.push_str(&self.generate_verify_entity_delete_constraints_fn(entity_name));
 
         service_functions.push_str(&self.generate_create_entity_fn(entity_name));
+        service_functions.push_str(&self.generate_get_entity_fn(entity_name));
         service_functions.push_str(&self.generate_update_entity_fn(entity_name));
         service_functions.push_str(&self.generate_delete_entity_fn(entity_name));
 

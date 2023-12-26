@@ -47,6 +47,10 @@ impl Entity {
     pub fn is_last(&self, attribute_name: &str) -> bool {
         attribute_name == self.attributes.last().unwrap().0.as_str()
     }
+
+    pub fn primary_key_type(&self) -> &AttributeType {
+        &self.attributes.iter().find(|(attribute_name, _)| attribute_name == &self.primary_key).unwrap().1
+    }
 }
 
 impl From<(EntityName, RawEntity, RawEntities)> for Entity {

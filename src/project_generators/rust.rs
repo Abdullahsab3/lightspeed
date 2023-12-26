@@ -21,6 +21,7 @@ pub static RUST_STATIC_TEMPLATE_DIR: &str = "/rust/microservice";
 pub static LIB_STATIC_TEMPLATE_PATH: &str = "src/lib.rs";
 pub static LOG_REQUEST_TEMPLATE_PATH: &str = "src/log_request.rs";
 pub static MAIN_TEMPLATE_PATH: &str = "src/main.rs";
+pub static UTILS_DIR: &str = "src/utils";
 pub trait RustMicroserviceGenerator: FileGenerator {
     fn generate_rust_microservice(&self, domain_driven_request: DomainDrivenRequest, out_dir: &str) -> io::Result<()>;
 }
@@ -102,8 +103,13 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
         /*
          * Generate models
          */
+        let config_static_template_path = rust_static_template_path.join("src/models/config.rs");
+        let config_static_template = std::fs::read_to_string(config_static_template_path)?;
+        self.generate_file(config_static_template, String::new(), &format!("{}/src/models/config.rs", out_dir))?;
+        let models_mod_static_template_path = rust_static_template_path.join("src/models/mod.rs");
+        let models_mod_static_template = std::fs::read_to_string(models_mod_static_template_path)?;
         let models_mods_dynamic_template = domain_driven_request.generate_model_mods();
-        self.generate_file(String::new(), models_mods_dynamic_template, &format!("{}/{}/mod.rs", out_dir, MODELS_DIR))?;
+        self.generate_file(models_mod_static_template, models_mods_dynamic_template, &format!("{}/{}/mod.rs", out_dir, MODELS_DIR))?;
         let models_dynamic_templates = domain_driven_request.generate_models();
         for (entity_name, model) in models_dynamic_templates {
             let model_path = format!("{}.rs", to_snake_case(&entity_name));
@@ -168,6 +174,11 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
         let main_static_template = std::fs::read_to_string(main_static_template_path)?;
         self.generate_file(main_static_template, String::new(), &format!("{}/{}", out_dir, MAIN_TEMPLATE_PATH))?;
 
+        /*
+         * Generate utils
+         */
+        let utils_static_template_path = rust_static_template_path.join(UTILS_DIR);
+        self.copy_dir_all(utils_static_template_path, format!("{}/{}", out_dir, UTILS_DIR))?;
         Ok(())
     }
 
