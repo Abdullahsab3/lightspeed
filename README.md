@@ -56,9 +56,19 @@ The domain entities can be described using the following JSON object:
 Defining a foreign attribute is done by using the following syntax: `entity_name.attribute_name`. In the example above, the `Car` entity has a foreign attribute `owned_by` that references the `id` attribute of the `User` entity.
 
 # How it works: The Response
-From the provided request, Lightspeed 'fills in' the spaces that are defined in the template, and stores the generated code in the provided folder. 
+From the provided request, Lightspeed 'fills in' the spaces that are defined in the template, and stores the generated code in the provided folder.
 
-For now, only Rust is (partly) supported in a not-so-maintainable, hardcooded template. This is still a proof of concept that I wanted to solidify as fast as possible. The idea is to make it more modular and maintainable in the future.
+The templates use well-defined keywords that Lightspeed will replace with the appropriate code. For example, the following template:
+```rust
+pub struct {entity_name} {
+    {attributes}
+}
+
+{attributes} = {attribute} + {attributes}
+{attribute} = pub {attribute_name}: {attribute_type},
+attribute_type = String | i32 | Uuid | ...
+```
+For now, only Rust is (partly) supported in a not-so-maintainable, hardcooded template. This is still a proof of concept that I wanted to solidify the basic idea as fast as possible. The idea is to make it more modular and maintainable in the future.
 
 # Usage
 The program accepts two flas: A path to the input file containing the JSON representation, and a path to a dircetory where the generated code will be stored. The command is as follows:
@@ -82,7 +92,7 @@ cargo run -- -i <path_to_input_file> -o <path_to_output_directory>
     - Unify the generation functions into one set of functions that always fill the same fields
 - Add support for tests and swagger documentation
 - Add support for kafka events
-- Add support for foreign keys
+- Add support for foreign keys: This can be tricky. You'd need to create tables in a specific order (order can be generated from a dependancy graph).
 - Fix issues of the initial MVP
 
 
@@ -90,7 +100,7 @@ cargo run -- -i <path_to_input_file> -o <path_to_output_directory>
 - The bigger picture: A universal template engine for CRUD microservices: All you have to do, is define the template in a language of choice, using the template keywords and the language conventions.
 - True modularity: The ability to accumulate different templates in order to introduce new features in the generated service (for example generating kafka when you need it)
 - Support for custom indentation and linting. Everything related to this is at this point hardcoded.
-- Optimisations: Incremental computation for example can speed up stuff.
+- Optimisations: Incremental computation for example might be able to optimise the generated code significantly.
 - Support for self reference within an entity (if you have nested entities like categories for example)
 - Code injection in existing services. If you want to add a new entity to a service for instance. Incremental computation can also be interesting here to apply.
 - And a whole list of other things :)

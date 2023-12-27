@@ -13,12 +13,11 @@ Generating a reactive microservice can look like this:
                 "id": "Uuid",
                 "name" : "String",
                 "surname": "String",
-                "age": "Int",
+                "age": "i32",
                 "email": "String",
                 "primary_key": "id",
-                "filter_by": ["name", "age", ["name", "surname"], "email"],
+                "filter_by": ["name", "age", ["name", "surname"], "email"] ,
                 "unique_attributes": ["email"]
-                // composite filters are filtered like this: major, minor, subminor, etc.
             }
         },
         {
@@ -28,7 +27,7 @@ Generating a reactive microservice can look like this:
                 "name" : "String",
                 "brand": "String",
                 "price": "Int",
-                "ownedBy": "User.id",
+                "owned_by": "User.id",
                 "primary_key": "id",
                 "filter_by": ["name", "brand"]
             }
