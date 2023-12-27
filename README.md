@@ -4,7 +4,8 @@ Lightspeed: Speed up the development process and generate CRUD based (reactive) 
 
 # TODO (MVP)
 - Add support for reading operations -> Done
-- Add support for filtering operations -> In progress
+- Add support for filtering operations -> Done
+- Add support for constraints and indexing -> In progress
 - Add support for kafka events
 - Add support for foreign keys, primary keys, unique keys -> In progress
 - Add support for IaC (Kubernetes & Docker)
