@@ -15,7 +15,7 @@ Lightspeed: Speed up the development process and generate CRUD based (reactive) 
 
 # Technical Debt
 - Unify all the templates to always use the same keywords-
-- Unify the generation functions to always fill the same fields
+- Unify the generation functions into one set of functions that always fill the same fields
 
 # Nice to Have
 - The bigger picture: A universal template engine for CRUD microservices: All you have to do, is define the template in a language of choice, using the template keywords and the language conventions.
