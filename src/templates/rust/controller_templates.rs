@@ -34,14 +34,14 @@ pub async fn get_{sc_entity_name}(
 
 pub static CONTROLLER_GET_PAGINATED_ENTITIES_TEMPLATE: &str = r#"
 pub async fn get_{sc_plural_entity}(
-    Query(paginated_params): Query<PaginatedParams>,
+    Query(filter_params): Query<{entity_name}FilterParams>,
     State(services): State<Arc<ServicesState>>,
 ) -> Result<impl IntoResponse> {
     services
         .{sc_plural_entity}_service
         .get_{sc_plural_entity}(
-            paginated_params.page.unwrap_or(1),
-            paginated_params.page_size.unwrap_or(10)
+            filter_params.page.unwrap_or(1),
+            filter_params.page_size.unwrap_or(10)
         )
         .await
         .map(|{sc_plural_entity}| {
@@ -111,6 +111,8 @@ use uuid::Uuid;
 
 use crate::error::Result;
 use crate::services::ServicesState;
+
+{imports}
 
 {controller_functions}
 
@@ -205,6 +207,7 @@ pub trait ControllerGenerator: ImportGenerator {
         controller_payloads.push_str(&self.generate_update_payload(&entity));
 
         CONTROLLER_FILE_TEMPLATE
+            .replace("{imports}", &self.generate_model_imports(&entity.name))
             .replace("{controller_functions}", &controller_functions)
             .replace("{controller_payloads}", &controller_payloads)
     }

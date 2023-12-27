@@ -145,7 +145,6 @@ impl DomainDrivenRequest {
             model_mods.push_str(model_mod.as_str());
         }
         model_mods
-    
     }
 
     pub fn generate_service_mods(&self) -> String {

@@ -42,6 +42,29 @@ impl {entity_name} {
 }
 "#;
 
+pub static FILTER_PARAMS_TEMPLATE: &str = r#"
+#[derive(Deserialize)]
+pub struct {entity_name}FilterParams {
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+    {attributes}
+}
+"#;
+
+pub static FILTER_IMPL_TEMPLATE: &str = r#"
+impl {entity_name}FilterParams {
+    {is_filter_functions}
+}
+"#;
+pub static IS_FILTER_FN: &str = r#"
+    pub fn is_{attribute_name}_filter(&self) -> bool {{
+       {check_if_attribute_is_not_null}
+    }}
+"#;
+
+pub static CHECK_IF_ATTRIBUTE_IS_NOT_NULL: &str = r#"
+        self.{attribute_name}.is_some()"#;
+
 
 pub static ATTRIBUTE_TEMPLATE: &str = r#"
     pub {attribute_name}: {attribute_type},"#;
@@ -69,6 +92,9 @@ use crate::error::Error;
 {model_definition}
 {model_impl}
 
+{filter_definition}
+{filter_impl}
+
 "#;
 
 pub trait ModelGenerator: ImportGenerator {
@@ -80,6 +106,9 @@ pub trait ModelGenerator: ImportGenerator {
             .replace("{imports}", &self.generate_controller_imports(&entity.name))
             .replace("{model_definition}", &model_definition)
             .replace("{model_impl}", &model_impl)
+            .replace("{filter_definition}", &self.generate_filter_params(&entity))
+            .replace("{filter_impl}", &self.generate_filter_params_impl(&entity))
+            
     }
     fn generate_struct(&self, entity: &Entity) -> String {
         let mut attributes = String::new();
@@ -164,6 +193,52 @@ pub trait ModelGenerator: ImportGenerator {
         ENUM_TEMPLATE
             .replace("{enum_name}", &name)
             .replace("{enum_values}", &values)
+    }
+
+    /**
+     * Idea: One struct that contains all the filter attributes
+     * The struct has an impl that consists of functions to check which type of filter is applied
+     * by checking which options are not null
+     * 
+     * In the controllers: Check which filter you have, starting from the most specific (ie the longest filter_by vector)
+     */
+    fn generate_filter_params(&self, entity: &Entity) -> String {
+        let filter_attributes = entity.filter_by.iter().fold(entity.filter_by.first().unwrap().to_owned(), |attributes, filter_by| {
+            let mut attributes = attributes.clone();
+            for attribute in filter_by {
+                if !attributes.contains(attribute) {
+                    attributes.push(attribute.clone());
+                }
+            }
+            attributes
+        }).iter().map(|attribute_name| ATTRIBUTE_TEMPLATE
+            .replace("{attribute_name}", &attribute_name)
+            .replace("{attribute_type}", "Option<String>"))
+            .collect::<Vec<String>>()
+            .join("");
+
+        FILTER_PARAMS_TEMPLATE
+            .replace("{entity_name}", &entity.name)
+            .replace("{attributes}", filter_attributes.as_str())
+    }
+
+    fn generate_filter_params_impl(&self, entity: &Entity) -> String {
+        let mut is_filter_functions = String::new();
+        for filter_by in &entity.filter_by {
+            let most_specific_attribute = filter_by.last().unwrap();
+            let check_if_attributes_are_not_null = filter_by
+                .iter()
+                .map(|attribute_name| CHECK_IF_ATTRIBUTE_IS_NOT_NULL
+                    .replace("{attribute_name}", &attribute_name))
+                .collect::<Vec<String>>()
+                .join(" && ");
+            is_filter_functions.push_str(&IS_FILTER_FN
+                .replace("{attribute_name}", &most_specific_attribute)
+                .replace("{check_if_attribute_is_not_null}", &check_if_attributes_are_not_null));
+        }
+        FILTER_IMPL_TEMPLATE
+            .replace("{entity_name}", &entity.name)
+            .replace("{is_filter_functions}", &is_filter_functions)
     }
 
     

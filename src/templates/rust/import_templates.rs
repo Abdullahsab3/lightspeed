@@ -3,7 +3,7 @@ use crate::utils::naming_convention::{to_snake_case, to_plural, to_snake_case_pl
 pub static IMPORT_TEMPLATE: &str = r#"
 use crate::{import};"#;
 
-pub static IMPORT_MODEL_TEMPLATE: &str = r#"models::{sc_entity_name}::{entity_name}"#;
+pub static IMPORT_MODEL_TEMPLATE: &str = r#"models::{sc_entity_name}::*"#;
 
 pub static IMPORT_SOURCE_TEMPLATE: &str = r#"sources::{sc_entity_name_plural}_table::{entity_plural}Table"#;
 
@@ -16,8 +16,7 @@ pub static ERROR_IMPORT_TEMPLATE: &str = r#"use crate::error::Error;"#;
 pub trait ImportGenerator {
     fn generate_model_imports(&self, entity_name: &str) -> String {
         let import = IMPORT_MODEL_TEMPLATE
-            .replace("{sc_entity_name}", &to_snake_case(entity_name))
-            .replace("{entity_name}", &entity_name);
+            .replace("{sc_entity_name}", &to_snake_case(entity_name));
         IMPORT_TEMPLATE.replace("{import}", &import)
     }
 
