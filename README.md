@@ -17,6 +17,8 @@ My vision on this issue is that a universal, template-driven language can be use
 
 The domain-driven description can also be decoupled from modelling technologies. It is certainly possible for a certain team to choose alternatives over UML. To this end, the request to generate a service is a well-defined JSON object, containing the domain definitions in a simple format. This allows for more options. It is possible to compile a UML diagram to that JSON, but you can also have an interactive user interface that allows the user to define the domain entities and their relationships.
 
+It is not the point to completely abstract the implementation away from the developer, but rather to empower the developer by providing them with an initial starting point for a more complex service.
+
 # How it works: The Request
 The domain entities can be described using the following JSON object:
 ```json
