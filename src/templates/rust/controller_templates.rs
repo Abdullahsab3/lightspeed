@@ -1,4 +1,4 @@
-use crate::{utils::naming_convention::{to_snake_case, to_snake_case_plural}, models::{entity::AttributeType, entity::Entity}};
+use crate::{utils::naming_convention::{to_snake_case, to_snake_case_plural, to_plural}, models::{entity::AttributeType, entity::Entity}};
 
 use super::{model_templates::ATTRIBUTE_TEMPLATE, import_templates::ImportGenerator};
 
@@ -22,13 +22,13 @@ pub async fn get_{sc_entity_name}(
     Path(id): Path<Uuid>,
     State(services): State<Arc<ServicesState>>,
 ) -> Result<impl IntoResponse> {
-    services
-        .{sc_plural_entity}_service
-        .get_{sc_entity_name}(id)
-        .await
-        .map(|{sc_entity_name}| {
-            (StatusCode::OK, Json({sc_entity_name}))
-        })
+    return services
+            .{sc_plural_entity}_service
+            .get_{sc_entity_name}(id)
+            .await
+            .map(|{sc_entity_name}| {
+                (StatusCode::OK, Json({entity_name}Response::{entity_name}({sc_entity_name})))
+            });
 }
 "#;
 
@@ -37,17 +37,48 @@ pub async fn get_{sc_plural_entity}(
     Query(filter_params): Query<{entity_name}FilterParams>,
     State(services): State<Arc<ServicesState>>,
 ) -> Result<impl IntoResponse> {
-    services
-        .{sc_plural_entity}_service
-        .get_{sc_plural_entity}(
-            filter_params.page.unwrap_or(1),
-            filter_params.page_size.unwrap_or(10)
-        )
-        .await
-        .map(|{sc_plural_entity}| {
-            (StatusCode::OK, Json({sc_plural_entity}))
-        })
-}
+    {filter_by}
+    return services
+            .{sc_plural_entity}_service
+            .get_{sc_plural_entity}(
+                filter_params.page.unwrap_or(1),
+                filter_params.page_size.unwrap_or(10)
+            )
+            .await
+            .map(|{sc_plural_entity}| {
+                (StatusCode::OK, Json({entity_name}Response::{plural_entity}({sc_plural_entity})))
+            });
+    }
+"#;
+
+pub static FILTER_BY_PAGINATED_TEMPLATE: &str = r#"
+    if filter_params.is_{attribute_name}_filter() {
+        return services
+                .{sc_plural_entity}_service
+                .filter_{sc_plural_entity}_by_{attribute_name}(
+                    {filter_by_fields},
+                    filter_params.page.unwrap_or(1),
+                    filter_params.page_size.unwrap_or(10)
+                )
+                .await
+                .map(|{sc_plural_entity}| {
+                    (StatusCode::OK, Json({entity_name}Response::{plural_entity_name}({sc_plural_entity})))
+                });
+    }
+"#;
+
+pub static FILTER_BY_TEMPLATE: &str = r#"
+    if filter_params.is_{attribute_name}_filter() {
+        return  services
+                .{sc_plural_entity}_service
+                .get_{sc_plural_entity}_by_{attribute_name}(
+                    {filter_by_fields}
+                )
+                .await
+                .map(|{sc_entity_name}| {
+                    (StatusCode::OK, Json({entity_name}Response::{entity_name}({sc_entity_name})))
+                })
+    }
 "#;
 
 pub static CONTROLLER_CREATE_ENTITY_PAYLOAD_TEMPLATE: &str = r#"
@@ -133,14 +164,44 @@ pub trait ControllerGenerator: ImportGenerator {
         CONTROLLER_GET_ENTITY_TEMPLATE
             .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
             .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
+            .replace("{plural_entity}", to_plural(&entity.name).as_str())
             .replace("{entity_name}", &entity.name)
     }
 
     fn generate_get_paginated_fn(&self, entity: &Entity) -> String {
+        let filters = entity.filter_by.iter().map(|filter_by| {
+            let filter_by_fields = filter_by.iter().map(|field| {
+                format!("filter_params.{}.unwrap()", field)
+            }).collect::<Vec<String>>().join(", ");
+            let most_specific_filter_by = filter_by.last().unwrap();
+            if filter_by.iter().filter(|field| entity.is_unique(field)).count() > 0 {
+                FILTER_BY_TEMPLATE
+                .replace("{attribute_name}", most_specific_filter_by)
+                .replace("{filter_by_fields}", &filter_by_fields)
+                .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
+                .replace("{plural_entity_name}", to_plural(&entity.name).as_str())
+                .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
+                .replace("{entity_name}", &entity.name)
+
+            } else {
+                FILTER_BY_PAGINATED_TEMPLATE
+                .replace("{attribute_name}", most_specific_filter_by)
+                .replace("{filter_by_fields}", &filter_by_fields)
+                .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
+                .replace("{plural_entity_name}", to_plural(&entity.name).as_str())
+                .replace("{entity_name}", &entity.name)
+                
+
+            }
+           
+        }).collect::<Vec<String>>().join("\n");
+        
         CONTROLLER_GET_PAGINATED_ENTITIES_TEMPLATE
             .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
             .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
             .replace("{entity_name}", &entity.name)
+            .replace("{filter_by}", &filters)
+            .replace("{plural_entity}", to_plural(&entity.name).as_str())
     }
 
     fn generate_update_fn(&self, entity: &Entity) -> String {

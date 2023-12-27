@@ -275,9 +275,22 @@ pub trait ModelGenerator: ImportGenerator {
                 }
             }
             attributes
-        }).iter().map(|attribute_name| ATTRIBUTE_TEMPLATE
+        }).iter().map(|attribute_name| {
+            let attribute_type = &entity.attributes.iter().find(|(key, _)| key == attribute_name).unwrap().1;
+            let attribute_type_str = 
+            "Option<".to_string()
+            +
+            match attribute_type {
+                AttributeType::Option(t) => t.to_string(),
+                _ => attribute_type.to_string()
+            }
+            .as_str()
+            +
+            ">";
+            ATTRIBUTE_TEMPLATE
             .replace("{attribute_name}", &attribute_name)
-            .replace("{attribute_type}", "Option<String>"))
+            .replace("{attribute_type}", &attribute_type_str)
+    })
             .collect::<Vec<String>>()
             .join("");
 
