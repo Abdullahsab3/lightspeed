@@ -20,10 +20,24 @@ pub static VERIFY_ENTITY_UPDATE_FN: &str = r##"
     }
 "##;
 
+pub static UNIQUESS_CONSTRAINT: &str = r##"
+        match self.get_{sc_plural_entity}_by_{attribute_name}({attribute_names}).await {
+            Ok(_) => return Err(Error::{entity_name}AlreadyExists),
+            Err(e) => ()
+        };
+"##;
+
+pub static EXISTENCE_CONSTRAINT: &str = r##"
+        match self.get_{sc_entity_name}({primary_key}).await {
+            Ok(_) => (),
+            Err(e) => return Err(Error::{entity_name}DoesNotExist)
+        };
+"##;
+
 pub static VERIFY_ENTITY_DELETE_FN: &str = r##"
     pub async fn verify_{sc_entity_name}_delete_constraints(
         &self,
-        {sc_entity_name}_id: Uuid
+        {sc_entity_name}_id: &Uuid
     ) -> Result<(), Error> {
         {verify_constraints}
     }
@@ -47,7 +61,7 @@ pub static CREATE_ENTITY_FN: &str = r##"
 pub static GET_ENTITY_FN: &str = r##"
     pub async fn get_{sc_entity_name}(
         &self,
-        {sc_entity_name}_id: Uuid
+        {sc_entity_name}_id: &Uuid
     ) -> Result<{entity_name}, Error> {
         match self.{table_name}_table.get_{sc_entity_name}(&{sc_entity_name}_id).await {
             Ok({sc_entity_name}) => Ok({sc_entity_name}),
@@ -129,12 +143,12 @@ pub static FILTER_BY_PAGINATED_FN: &str = r##"
     }
 "##;
 
-pub static FILTER_BY_FIELD: &str = r#"{attribute_name}: {attribute_type}"#;
+pub static FILTER_BY_FIELD: &str = r#"{attribute_name}: &{attribute_type}"#;
 
 pub static UPDATE_ENTITY_FN: &str = r##"
     pub async fn update_{sc_entity_name}(
         &self,
-        {sc_entity_name}_id: Uuid,
+        {sc_entity_name}_id: &Uuid,
         {sc_entity_name}_payload: Update{entity_name}Payload
     ) -> Result<{entity_name}, Error> {
         let {sc_entity_name} = self.get_{sc_entity_name}({sc_entity_name}_id).await?.update({sc_entity_name}_payload)?;
@@ -150,9 +164,9 @@ pub static UPDATE_ENTITY_FN: &str = r##"
 pub static DELETE_ENTITY_FN: &str = r##"
     pub async fn delete_{sc_entity_name}(
         &self,
-        {sc_entity_name}_id: Uuid
+        {sc_entity_name}_id: &Uuid
     ) -> Result<(), Error> {
-        self.verify_{sc_entity_name}_delete_constraints({sc_entity_name}_id).await?;
+        self.verify_{sc_entity_name}_delete_constraints(&{sc_entity_name}_id).await?;
 
         match self.{table_name}_table.delete_{sc_entity_name}(&{sc_entity_name}_id).await {
             Ok(_) => Ok(()),
@@ -211,32 +225,52 @@ let {sc_entity_plural}_service = {sc_entity_plural}_service::{entity_plural}Serv
 
 pub trait ServiceGenerator: ImportGenerator {
 
-    fn generate_verify_entity_creation_constraints_fn(&self, entity_name: &str) -> String {
-        let sc_entity_name = to_snake_case(entity_name);
+    fn generate_verify_entity_creation_constraints_fn(&self, entity: &Entity) -> String {
+        let sc_entity_name = to_snake_case(&entity.name);
         // TODO: Generate constraints
         let verify_constraints = "Ok(())".to_string();
+        let uniqueness_constraints = entity.unique_attributes.iter().map(|uniqe_attributes| {
+            let most_specific_attribute = uniqe_attributes.last().unwrap();
+            let attribute_names = uniqe_attributes.iter().map(|attribute_name| format!("&{}.{}", to_snake_case(&entity.name), attribute_name)).collect::<Vec<String>>().join(",");
+            UNIQUESS_CONSTRAINT
+                .replace("{sc_entity_name}", &sc_entity_name)
+                .replace("{entity_name}", &entity.name)
+                .replace("{attribute_name}", &most_specific_attribute)
+                .replace("{attribute_names}", &attribute_names)
+                .replace("{sc_plural_entity}", &to_snake_case_plural(&entity.name))
+        }).collect::<Vec<String>>().join("\n");
         VERIFY_ENTITY_CREATION_FN
             .replace("{sc_entity_name}", &sc_entity_name)
-            .replace("{entity_name}", &entity_name)
-            .replace("{verify_constraints}", &verify_constraints)
+            .replace("{entity_name}", &entity.name)
+            .replace("{verify_constraints}", (uniqueness_constraints + verify_constraints.as_str()).as_str())
     }
 
-    fn generate_verify_entity_update_constraints_fn(&self, entity_name: &str) -> String {
-        let sc_entity_name = to_snake_case(entity_name);
+    fn generate_verify_entity_update_constraints_fn(&self, entity: &Entity) -> String {
+        let sc_entity_name = to_snake_case(&entity.name);
         let verify_constraints = "Ok(())".to_string();
+        let exitence_constraint  = 
+            EXISTENCE_CONSTRAINT
+                .replace("{sc_entity_name}", &sc_entity_name)
+                .replace("{entity_name}", &entity.name)
+                .replace("{primary_key}", &format!("&{}.{}", to_snake_case(&entity.name), &entity.primary_key));
         VERIFY_ENTITY_UPDATE_FN
             .replace("{sc_entity_name}", &sc_entity_name)
-            .replace("{entity_name}", &entity_name)
-            .replace("{verify_constraints}", &verify_constraints)
+            .replace("{entity_name}", &entity.name)
+            .replace("{verify_constraints}", (exitence_constraint + verify_constraints.as_str()).as_str())
     }
 
     fn generate_verify_entity_delete_constraints_fn(&self, entity_name: &str) -> String {
         let sc_entity_name = to_snake_case(entity_name);
         let verify_constraints = "Ok(())".to_string();
+        let exitence_constraint  = 
+            EXISTENCE_CONSTRAINT
+                .replace("{sc_entity_name}", &sc_entity_name)
+                .replace("{entity_name}", &entity_name)
+                .replace("{primary_key}", &format!("&{}_{}", to_snake_case(entity_name), &"id"));
         VERIFY_ENTITY_DELETE_FN
             .replace("{sc_entity_name}", &sc_entity_name)
             .replace("{entity_name}", &entity_name)
-            .replace("{verify_constraints}", &verify_constraints)
+            .replace("{verify_constraints}", (exitence_constraint + verify_constraints.as_str()).as_str())
     }
 
     fn generate_create_entity_fn(&self, entity_name: &str) -> String {
@@ -327,8 +361,8 @@ pub trait ServiceGenerator: ImportGenerator {
         entity_imports.push_str(&self.generate_controller_imports(entity.name.as_str()));
 
         let mut service_functions = String::new();
-        service_functions.push_str(&self.generate_verify_entity_creation_constraints_fn(entity.name.as_str()));
-        service_functions.push_str(&self.generate_verify_entity_update_constraints_fn(entity.name.as_str()));
+        service_functions.push_str(&self.generate_verify_entity_creation_constraints_fn(&entity));
+        service_functions.push_str(&self.generate_verify_entity_update_constraints_fn(&entity));
         service_functions.push_str(&self.generate_verify_entity_delete_constraints_fn(entity.name.as_str()));
 
         service_functions.push_str(&self.generate_create_entity_fn(entity.name.as_str()));

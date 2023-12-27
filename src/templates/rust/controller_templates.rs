@@ -24,7 +24,7 @@ pub async fn get_{sc_entity_name}(
 ) -> Result<impl IntoResponse> {
     return services
             .{sc_plural_entity}_service
-            .get_{sc_entity_name}(id)
+            .get_{sc_entity_name}(&id)
             .await
             .map(|{sc_entity_name}| {
                 (StatusCode::OK, Json({entity_name}Response::{entity_name}({sc_entity_name})))
@@ -97,7 +97,7 @@ pub async fn update_{sc_entity_name}(
 ) -> Result<impl IntoResponse> {
     services
         .{sc_plural_entity}_service
-        .update_{sc_entity_name}(id, payload)
+        .update_{sc_entity_name}(&id, payload)
         .await
         .map(|{sc_entity_name}| {
             (StatusCode::OK, Json({sc_entity_name}))
@@ -122,7 +122,7 @@ pub async fn delete_{sc_entity_name}(
 ) -> Result<impl IntoResponse> {
     services
         .{sc_plural_entity}_service
-        .delete_{sc_entity_name}(id)
+        .delete_{sc_entity_name}(&id)
         .await
 }
 "#;
@@ -171,7 +171,7 @@ pub trait ControllerGenerator: ImportGenerator {
     fn generate_get_paginated_fn(&self, entity: &Entity) -> String {
         let filters = entity.filter_by.iter().map(|filter_by| {
             let filter_by_fields = filter_by.iter().map(|field| {
-                format!("filter_params.{}.unwrap()", field)
+                format!("&filter_params.{}.unwrap()", field)
             }).collect::<Vec<String>>().join(", ");
             let most_specific_filter_by = filter_by.last().unwrap();
             if filter_by.iter().filter(|field| entity.is_unique(field)).count() > 0 {
