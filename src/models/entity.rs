@@ -55,9 +55,7 @@ impl Entity {
     }
 
     pub fn is_unique(&self, attribute_name: &str) -> bool {
-        let res = self.unique_attributes.iter().any(|unique_attributes| unique_attributes.contains(&attribute_name.to_string()));
-        println!("is_unique: {} {}", attribute_name, res);
-        res
+        self.unique_attributes.iter().any(|unique_attributes| unique_attributes.contains(&attribute_name.to_string()))
     
     }
 }

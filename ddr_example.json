@@ -1,0 +1,30 @@
+{
+    "service_name": "MyService",
+    "entities": [
+        {
+            "User" : 
+            {
+                "id": "Uuid",
+                "name" : "String",
+                "surname": "String",
+                "age": "i32",
+                "email": "String",
+                "primary_key": "id",
+                "filter_by": ["name", "age", ["name", "surname"], "email"] ,
+                "unique_attributes": ["email"]
+            }
+        },
+        {
+            "Car" : 
+            {
+                "id": "Uuid",
+                "name" : "String",
+                "brand": "String",
+                "price": "Int",
+                "owned_by": "User.id",
+                "primary_key": "id",
+                "filter_by": ["name", "brand"]
+            }
+        }
+    ]
+}
