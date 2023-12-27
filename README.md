@@ -1,4 +1,4 @@
-# lightspeed
+# Lightspeed
 <p align="center">
 <img src="md_assets/logo.jpeg"
      alt="Markdown Monster icon"
