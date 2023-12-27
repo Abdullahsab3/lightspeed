@@ -6,7 +6,7 @@ pub struct PaginatedParams {
     pub page_size: Option<i64>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PaginatedResult<T: Serialize> {
     pub results: Vec<T>,
     pub total: i64,
