@@ -8,14 +8,22 @@
 Lightspeed: Speed up the development process and generate CRUD based (reactive) microservices from your domain-specific entities
 
 
+
 # Motivation
-In day-to-day software development, software engineers find themselves writing a lot of CRUD based (micro)services. Manually creating this kind of services is a tedious and repetitive job, and it can be prone to errors and bugs due to its nature of having a significant amount of boilerplate. A developer would typically need to set up the code for a new service, as well as the infrastructure that is needed in order to connect with the database, process the incoming requests, create the API, etc. This can distract the developer from the actual domain problems that they need to tackle. CRUD based services typically have the same characteristics, even though they might be implemented in different technologies or using different patterns. Abstracting the CRUD implementation away from the developer might let them focus on the domain-specific, more complex problems that they need to solve. This will also allow teams to deliver much faster.
+Motvation and intent are explained in this video as well:
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=NHRZVw2Y0Gg"><img src="https://img.youtube.com/vi/NHRZVw2Y0Gg/0.jpg" alt="IMAGE ALT TEXT"></a>
+</div>
+<br></br>
+In day-to-day software development, software engineers find themselves writing a lot of CRUD based (micro)services. Manually creating this kind of services is a tedious and repetitive job, and it can be prone to errors and bugs due to its nature of having a significant amount of boilerplate. A developer would typically need to set up the code for a new service, as well as the infrastructure that is needed in order to connect with the database, process the incoming requests, create the API, etc. This can distract the developer from the actual domain problems that they need to tackle. CRUD based services typically have the same characteristics, even though they might be implemented in different technologies or using different patterns. Automatically generating the CRUD implementation for the developer might let them focus on the domain-specific, more complex problems that they need to solve, while still having the power to adjust the generated code how they see fit. This will also allow teams to deliver much faster.
 
 The idea of generating programs and services from domain-specific description is not a new one. Generating Java programs from UML diagrams for instance has been existing for decades. The issue with these solutions, however, is that they are too coupled with certain technologies and patterns, which makes new technologies and ideas difficult to adapt. Furthermore, companies might have their own in-house technologies or patterns that they utilize. Therefore, it would make sense to have some kind of decoupling the programs that need to be generated, and the common technologies and patterns.
 
 My vision on this issue is that a universal, template-driven language can be used to define service templates. This way, we decouple the technology from the domain specifications. It can be possible to switch to a new kind of technology at any time. The system architect will then have to just define a new template in the new technology.
 
 The domain-driven description can also be decoupled from modelling technologies. It is certainly possible for a certain team to choose alternatives over UML. To this end, the request to generate a service is a well-defined JSON object, containing the domain definitions in a simple format. This allows for more options. It is possible to compile a UML diagram to that JSON, but you can also have an interactive user interface that allows the user to define the domain entities and their relationships.
+
+It is not the point to completely abstract the implementation away from the developer, but rather to empower the developer by providing them with an initial starting point for a more complex service.
 
 # How it works: The Request
 The domain entities can be described using the following JSON object:
