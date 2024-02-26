@@ -1,4 +1,4 @@
-use crate::{utils::naming_convention::{to_snake_case, to_snake_case_plural, to_plural}, models::{entity::AttributeType, entity::Entity}};
+use crate::{utils::naming_convention::to_snake_case, models::{entity::AttributeType, entity::Entity}};
 
 use super::{model_templates::ATTRIBUTE_TEMPLATE, import_templates::ImportGenerator};
 
@@ -33,20 +33,20 @@ pub async fn get_{sc_entity_name}(
 "#;
 
 pub static CONTROLLER_GET_PAGINATED_ENTITIES_TEMPLATE: &str = r#"
-pub async fn get_{sc_plural_entity}(
+pub async fn filter_{sc_plural_entity}(
     Query(filter_params): Query<{entity_name}FilterParams>,
     State(services): State<Arc<ServicesState>>,
 ) -> Result<impl IntoResponse> {
     {filter_by}
     return services
             .{sc_plural_entity}_service
-            .get_{sc_plural_entity}(
+            .get_paginated_{sc_plural_entity}(
                 filter_params.page.unwrap_or(1),
                 filter_params.page_size.unwrap_or(10)
             )
             .await
             .map(|{sc_plural_entity}| {
-                (StatusCode::OK, Json({entity_name}Response::{plural_entity}({sc_plural_entity})))
+                (StatusCode::OK, Json({entity_name}Response::Paginated{plural_entity}({sc_plural_entity})))
             });
     }
 "#;
@@ -62,7 +62,7 @@ pub static FILTER_BY_PAGINATED_TEMPLATE: &str = r#"
                 )
                 .await
                 .map(|{sc_plural_entity}| {
-                    (StatusCode::OK, Json({entity_name}Response::{plural_entity_name}({sc_plural_entity})))
+                    (StatusCode::OK, Json({entity_name}Response::Paginated{plural_entity_name}({sc_plural_entity})))
                 });
     }
 "#;
@@ -156,15 +156,15 @@ pub trait ControllerGenerator: ImportGenerator {
     fn generate_create_fn(&self, entity: &Entity) -> String {
         CONTROLLER_CREATE_ENTITY_TEMPLATE
             .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
-            .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case(&entity.plural_name).as_str())
             .replace("{entity_name}", &entity.name)
     }
 
     fn generate_get_fn(&self, entity: &Entity) -> String {
         CONTROLLER_GET_ENTITY_TEMPLATE
             .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
-            .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
-            .replace("{plural_entity}", to_plural(&entity.name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case(&entity.plural_name).as_str())
+            .replace("{plural_entity}", entity.plural_name.as_str())
             .replace("{entity_name}", &entity.name)
     }
 
@@ -178,8 +178,8 @@ pub trait ControllerGenerator: ImportGenerator {
                 FILTER_BY_TEMPLATE
                 .replace("{attribute_name}", most_specific_filter_by)
                 .replace("{filter_by_fields}", &filter_by_fields)
-                .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
-                .replace("{plural_entity_name}", to_plural(&entity.name).as_str())
+                .replace("{sc_plural_entity}", to_snake_case(&entity.plural_name).as_str())
+                .replace("{plural_entity_name}", entity.plural_name.as_str())
                 .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
                 .replace("{entity_name}", &entity.name)
 
@@ -187,8 +187,8 @@ pub trait ControllerGenerator: ImportGenerator {
                 FILTER_BY_PAGINATED_TEMPLATE
                 .replace("{attribute_name}", most_specific_filter_by)
                 .replace("{filter_by_fields}", &filter_by_fields)
-                .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
-                .replace("{plural_entity_name}", to_plural(&entity.name).as_str())
+                .replace("{sc_plural_entity}", to_snake_case(&entity.plural_name).as_str())
+                .replace("{plural_entity_name}", entity.plural_name.as_str())
                 .replace("{entity_name}", &entity.name)
                 
 
@@ -198,23 +198,23 @@ pub trait ControllerGenerator: ImportGenerator {
         
         CONTROLLER_GET_PAGINATED_ENTITIES_TEMPLATE
             .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
-            .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case(&entity.plural_name).as_str())
             .replace("{entity_name}", &entity.name)
             .replace("{filter_by}", &filters)
-            .replace("{plural_entity}", to_plural(&entity.name).as_str())
+            .replace("{plural_entity}", entity.plural_name.as_str())
     }
 
     fn generate_update_fn(&self, entity: &Entity) -> String {
         CONTROLLER_UPDATE_ENTITY_TEMPLATE
             .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
-            .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case(&entity.plural_name).as_str())
             .replace("{entity_name}", &entity.name)
     }
 
     fn generate_delete_fn(&self, entity: &Entity) -> String {
         CONTROLLER_DELETE_ENTITY_TEMPLATE
             .replace("{sc_entity_name}", to_snake_case(&entity.name).as_str())
-            .replace("{sc_plural_entity}", to_snake_case_plural(&entity.name).as_str())
+            .replace("{sc_plural_entity}", to_snake_case(&entity.plural_name).as_str())
             .replace("{entity_name}", &entity.name)
     }
 
@@ -268,7 +268,7 @@ pub trait ControllerGenerator: ImportGenerator {
         controller_payloads.push_str(&self.generate_update_payload(&entity));
 
         CONTROLLER_FILE_TEMPLATE
-            .replace("{imports}", &self.generate_model_imports(&entity.name))
+            .replace("{imports}", &self.generate_model_imports(&entity))
             .replace("{controller_functions}", &controller_functions)
             .replace("{controller_payloads}", &controller_payloads)
     }

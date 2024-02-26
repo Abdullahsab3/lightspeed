@@ -36,13 +36,8 @@ pub fn to_upper_snake_case(camel_case: &str) -> String {
     to_snake_case(camel_case).to_ascii_uppercase()
 }
 
-pub fn to_plural(entity: &str) -> String {
-    entity.to_string() + "s"
-}
 
-pub fn to_snake_case_plural(camel_case: &str) -> String {
-    to_plural(&to_snake_case(camel_case))
-}
+
 
 pub fn kebab_to_snake_case(kebab_case: &str) -> String {
     kebab_case.replace("-", "_")

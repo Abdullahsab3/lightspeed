@@ -9,6 +9,7 @@ pub type RawEntity = Value;
 
 pub type AttributeName = String;
 pub type EntityName = String;
+pub type EntityPluralName = String;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ForeginKey {
@@ -38,6 +39,7 @@ pub type UniqueAttributes = Vec<AttributeName>;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Entity {
     pub name: String,
+    pub plural_name: String,
     pub attributes: Vec<(AttributeName, AttributeType)>,
     pub primary_key: String,
     pub foreign_keys: Vec<ForeginKey>,
@@ -45,13 +47,19 @@ pub struct Entity {
     pub filter_by: Vec<FilterBy>,
 }
 
+impl Display for Entity {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Entity: {}", self.name)
+    }
+}
+
 impl Entity {
     pub fn is_last(&self, attribute_name: &str) -> bool {
-        attribute_name == self.attributes.last().unwrap().0.as_str()
+        attribute_name == self.attributes.last().expect(&format!("Attributes for {} are empty or malformed", self.name)).0.as_str()
     }
 
     pub fn primary_key_type(&self) -> &AttributeType {
-        &self.attributes.iter().find(|(attribute_name, _)| attribute_name == &self.primary_key).unwrap().1
+        &self.attributes.iter().find(|(attribute_name, _)| attribute_name == &self.primary_key).expect(&format!("No primary key provided for {}", self.name)).1
     }
 
     pub fn is_unique(&self, attribute_name: &str) -> bool {
@@ -60,9 +68,9 @@ impl Entity {
     }
 }
 
-impl From<(EntityName, RawEntity, RawEntities)> for Entity {
-    fn from((entity_name, raw_entity, raw_entities): (EntityName, RawEntity, RawEntities)) -> Self {
-        let mut attributes = raw_entity.as_object().unwrap().iter().map(|(attribute_name, attribute_type)| {
+impl From<(EntityName, EntityPluralName, RawEntity, RawEntities)> for Entity {
+    fn from((entity_name, entity_plural_name, raw_entity, raw_entities): (EntityName, EntityPluralName, RawEntity, RawEntities)) -> Self {
+        let mut attributes = raw_entity.as_object().expect("Entity is not correctly formatted").iter().map(|(attribute_name, attribute_type)| {
             let str_attribute_type = attribute_type.as_str().unwrap_or("Unknown");
             let attribute_type = AttributeType::from_str(str_attribute_type);
             (attribute_name.to_string(), attribute_type)
@@ -78,7 +86,7 @@ impl From<(EntityName, RawEntity, RawEntities)> for Entity {
                     let foreign_key_ref = ForeginKey::from_str(&raw_attr_type);
                     match foreign_key_ref {
                         Some(foreign_key_ref) => {
-                            let foreign_key_entity = raw_entities.as_array().unwrap().iter().find(|entity| {
+                            let foreign_key_entity = raw_entities.as_array().expect("Entities are not correctly formatted").iter().find(|entity| {
                                 entity.as_object().unwrap().contains_key(&foreign_key_ref.entity_name)
                             }).unwrap().as_object().unwrap().get(&foreign_key_ref.entity_name).unwrap().as_object().unwrap();
                             let foreign_key_attribute_type = foreign_key_entity.get(&foreign_key_ref.attribute_name).unwrap();
@@ -121,6 +129,7 @@ impl From<(EntityName, RawEntity, RawEntities)> for Entity {
 
         Entity {
             name: entity_name,
+            plural_name: entity_plural_name,
             attributes,
             primary_key,
             foreign_keys,
@@ -141,7 +150,7 @@ pub enum AttributeType {
     F32,
     F64,
     Boolean,
-    UTCDateTime,
+    NaiveDateTime,
     Option(Box<AttributeType>),
     Unknown(String),
 }
@@ -178,7 +187,7 @@ impl From<&AttributeType> for PostgresAttributeType {
             AttributeType::F32 => PostgresAttributeType::REAL,
             AttributeType::F64 => PostgresAttributeType::DOUBLE_PRECISION,
             AttributeType::Boolean => PostgresAttributeType::BOOLEAN,
-            AttributeType::UTCDateTime => PostgresAttributeType::TIMESTAMP,
+            AttributeType::NaiveDateTime => PostgresAttributeType::TIMESTAMP,
             AttributeType::Option(attribute_type) => PostgresAttributeType::OPTION(Box::new(Into::<PostgresAttributeType>::into(attribute_type.as_ref()))),
             AttributeType::Unknown(_) => PostgresAttributeType::UNKNOWN,
         }
@@ -214,7 +223,8 @@ impl AttributeType {
             "f32" => AttributeType::F32,
             "f64" => AttributeType::F64,
             "bool" => AttributeType::Boolean,
-            "UTCDateTime" => AttributeType::UTCDateTime,
+            "NaiveDateTime" => AttributeType::NaiveDateTime,
+            "chrono::NaiveDateTime" => AttributeType::NaiveDateTime,
             _ if s.starts_with("Option<") && s.ends_with(">") => {
                 let inner_type = s[7..s.len() - 1].to_string();
                 AttributeType::Option(Box::new(AttributeType::from_str(inner_type.as_str())))
@@ -225,8 +235,6 @@ impl AttributeType {
 }
 
 impl Display for AttributeType {
-
-
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             let str = match self {
                 AttributeType::String => "String".to_string(),
@@ -236,9 +244,9 @@ impl Display for AttributeType {
                 AttributeType::F32 => "f32".to_string(),
                 AttributeType::F64 => "f64".to_string(),
                 AttributeType::Boolean => "bool".to_string(),
-                AttributeType::UTCDateTime => "UTCDateTime".to_string(),
+                AttributeType::NaiveDateTime => "chrono::NaiveDateTime".to_string(),
                 AttributeType::Option(attribute_type) => format!("Option<{}>", attribute_type.to_string()),
-                AttributeType::Unknown(_) => panic!("Unknown attribute type"),
+                AttributeType::Unknown(unknown) => panic!("Unknown attribute type {unknown}"),
             };
             write!(f, "{}", str)
     }

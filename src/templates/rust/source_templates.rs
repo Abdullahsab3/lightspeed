@@ -1,4 +1,4 @@
-use crate::{utils::naming_convention::{to_snake_case, to_plural}, templates::postgres::crud_query_templates::CrudQueryGenerator, models::entity::Entity};
+use crate::{utils::naming_convention::to_snake_case, templates::postgres::crud_query_templates::CrudQueryGenerator, models::entity::Entity};
 
 use super::{model_templates::ModelGenerator, import_templates::ImportGenerator};
 
@@ -39,7 +39,7 @@ pub static GET_ENTITY_FN: &str = r##"
 "##;
 
 pub static GET_PAGINATED_FN: &str = r##"
-    pub async fn get_{sc_plural_entity}(
+    pub async fn get_paginated_{sc_plural_entity}(
         &self,
         page: i64,
         limit: i64
@@ -213,10 +213,9 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
     }
 
     fn generate_get_paginated_fn(&self, entity: &Entity) -> String {
-        let sc_entity_name = to_snake_case(&entity.name);
         let get_paginated_query = self.generate_get_paginated_query(&entity);
         GET_PAGINATED_FN
-            .replace("{sc_plural_entity}", &to_plural(&sc_entity_name))
+            .replace("{sc_plural_entity}", &to_snake_case(&entity.plural_name))
             .replace("{entity_name}", &entity.name)
             .replace("{get_paginated_query}", &get_paginated_query)
     }
@@ -235,7 +234,7 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
             if filter_by.iter().filter(|field_name| entity.is_unique(&field_name)).count() > 0 {
                 let filter_by_query = self.generate_filter_by_query(&entity, &filter_by);
                 FILTER_BY_FN
-                .replace("{sc_plural_entity}", &to_plural(&to_snake_case(&entity.name)))
+                .replace("{sc_plural_entity}", &to_snake_case(&entity.plural_name))
                 .replace("{entity_name}", &entity.name)
                 .replace("{filter_by_query}", &filter_by_query)
                 .replace("{filter_by_values}", &filter_by_values)
@@ -246,7 +245,7 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
             } else {
                 let filter_by_paginated_query = self.generate_filter_by_paginated_query(&entity, &filter_by);
                 FILTER_BY_PAGINATED_FN
-                .replace("{sc_plural_entity}", &to_plural(&to_snake_case(&entity.name)))
+                .replace("{sc_plural_entity}", &to_snake_case(&entity.plural_name))
                 .replace("{entity_name}", &entity.name)
                 .replace("{filter_by_paginated_query}", &filter_by_paginated_query)
                 .replace("{filter_by_values}", &filter_by_values)
@@ -271,7 +270,7 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
             }).collect::<Vec<String>>().join("\n, ");
             let filter_by_paginated_count_query = self.generate_filter_by_paginated_count_query(&entity, &filter_by);
             FILTER_BY_PAGINATED_COUNT_FN
-                .replace("{sc_plural_entity}", &to_plural(&to_snake_case(&entity.name)))
+                .replace("{sc_plural_entity}", &to_snake_case(&entity.plural_name))
                 .replace("{entity_name}", &entity.name)
                 .replace("{filter_by_paginated_count_query}", &filter_by_paginated_count_query)
                 .replace("{filter_by_values}", &filter_by_values)
@@ -284,7 +283,7 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
         let sc_entity_name = to_snake_case(&entity.name);
         let count_query = self.generate_count_query(&entity);
         GET_COUNT_FN
-            .replace("{sc_plural_entity}", &to_plural(&sc_entity_name))
+            .replace("{sc_plural_entity}", &to_snake_case(&entity.plural_name))
             .replace("{entity_name}", &entity.name)
             .replace("{count_query}", &count_query)
     }
@@ -313,7 +312,7 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
     }
 
     fn generate_source(&self, entity: &Entity) -> String {
-        let entity_imports = self.generate_model_imports(&entity.name);
+        let entity_imports = self.generate_model_imports(&entity);
 
         let mut source_functions = String::new();
         source_functions.push_str(SourceGenerator::generate_create_fn(self, &entity).as_str());
@@ -327,7 +326,7 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
 
         SOURCE_FILE_TEMPLATE
             .replace("{entity_imports}", &entity_imports)
-            .replace("{entity_plural}", &to_plural(&entity.name))
+            .replace("{entity_plural}", &entity.plural_name)
             .replace("{source_functions}", &source_functions)
     }
     

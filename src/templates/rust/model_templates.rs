@@ -1,4 +1,4 @@
-use crate::{models::entity::{Entity, AttributeType}, utils::naming_convention::{to_snake_case, to_plural}};
+use crate::{models::entity::{Entity, AttributeType}, utils::naming_convention::to_snake_case};
 
 use super::import_templates::ImportGenerator;
 
@@ -12,7 +12,7 @@ pub struct {struct_name} {
 pub static NEW_FROM_PAYLOAD_TEMPLATE: &str = r#"
     pub fn new(payload: Add{entity_name}Payload) -> Result<Self, Error> {
         Ok(Self {
-            id: Uuid::new_v4(),
+            {primary_key}: Uuid::new_v4(),
             {new_attribute_from_payload}
         })
     }
@@ -24,7 +24,7 @@ pub static NEW_ATTRIBUTE_FROM_PAYLOAD: &str = r#"
 pub static UPDATE_FROM_PAYLOAD_TEMPLATE: &str = r#"
     pub fn update(self, payload: Update{entity_name}Payload) -> Result<Self, Error> {
         Ok(Self {
-            id: self.id,
+            {primary_key}: self.{primary_key},
             {update_attribute_from_payload}
         })
     }
@@ -100,9 +100,10 @@ impl Serialize for {enum_name} {
 "#;
 
 pub static SINGLE_ENUM: &str = r#"{entity_name}({entity_name})"#;
-pub static PAGINATED_ENUM: &str = r#"{entity_plural}(PaginatedResult<{entity_name}>)"#;
+pub static PAGINATED_ENUM: &str = r#"Paginated{entity_plural}(PaginatedResult<{entity_name}>)"#;
 pub static ENUM_MATCH_VALUES: &str = r#"
-                {enum_name}::{enum_value}({sc_entity_name}) => {sc_entity_name}.serialize(serializer),"#;
+                {enum_name}::{entity_name}({sc_entity_name}) => {sc_entity_name}.serialize(serializer),
+                {enum_name}::Paginated{entity_plural}({sc_plural_entity}) => {sc_plural_entity}.serialize(serializer)"#;
 
 pub static ENUM_VALUE_TEMPLATE: &str = r#"
     {enum_value},"#;
@@ -136,7 +137,7 @@ pub trait ModelGenerator: ImportGenerator {
         let model_definition = self.generate_struct(entity);
         let model_impl = self.generate_struct_impl(entity);
         MODEL_FILE_TEMPLATE
-            .replace("{imports}", &self.generate_controller_imports(&entity.name))
+            .replace("{imports}", &self.generate_controller_imports(&entity))
             .replace("{model_definition}", &model_definition)
             .replace("{model_impl}", &model_impl)
             .replace("{filter_definition}", &self.generate_filter_params(&entity))
@@ -169,6 +170,7 @@ pub trait ModelGenerator: ImportGenerator {
                 .replace("{attribute_type}", &value.to_string()));
         }
         NEW_FROM_PAYLOAD_TEMPLATE
+            .replace("{primary_key}", &entity.primary_key)
             .replace("{entity_name}", &entity.name)
             .replace("{new_attribute_from_payload}", &new_attribute_from_payload)
     }
@@ -198,6 +200,7 @@ pub trait ModelGenerator: ImportGenerator {
             }
         }
         UPDATE_FROM_PAYLOAD_TEMPLATE
+            .replace("{primary_key}", &entity.primary_key)
             .replace("{entity_name}", &entity.name)
             .replace("{update_attribute_from_payload}", &update_attribute_from_payload)
     }
@@ -236,7 +239,7 @@ pub trait ModelGenerator: ImportGenerator {
             .replace("{entity_name}", &entity.name), 
             PAGINATED_ENUM
             .replace("{entity_name}", &entity.name)
-            .replace("{entity_plural}", &to_plural(&entity.name))];
+            .replace("{entity_plural}", &&entity.plural_name)];
         let enum_name = format!("{}Response", &entity.name);
         RESPONSE_ENUM_TEMPLATE
             .replace("{enum_name}", &enum_name)
@@ -244,16 +247,14 @@ pub trait ModelGenerator: ImportGenerator {
     }
 
     fn generate_response_serialize_impl(&self, entity: &Entity) -> String {
-        let enum_values = vec![
-            entity.name.to_string(), 
-           to_plural(&entity.name)];
 
-        let enum_match_values = enum_values.iter().map(|enum_value| ENUM_MATCH_VALUES
+
+        let enum_match_values = ENUM_MATCH_VALUES
             .replace("{enum_name}", &format!("{}Response", &entity.name))
-            .replace("{enum_value}", enum_value)
-            .replace("{sc_entity_name}", &to_snake_case(&entity.name)))
-            .collect::<Vec<String>>()
-            .join("");
+            .replace("{sc_entity_name}", &to_snake_case(&entity.name))
+            .replace("{entity_name}", &entity.name)
+            .replace("{sc_plural_entity}", &to_snake_case(&entity.plural_name))
+            .replace("{entity_plural}", &entity.plural_name);
         SERIALIZE_ENUM_TEMPLATE
             .replace("{enum_name}", &format!("{}Response", &entity.name))
             .replace("{enum_match_values}", &enum_match_values)
@@ -276,7 +277,7 @@ pub trait ModelGenerator: ImportGenerator {
             }
             attributes
         }).iter().map(|attribute_name| {
-            let attribute_type = &entity.attributes.iter().find(|(key, _)| key == attribute_name).unwrap().1;
+            let attribute_type = &entity.attributes.iter().find(|(key, _)| key == attribute_name).expect(format!("attribute name: {attribute_name} not found. Entity: {entity}").as_str()).1;
             let attribute_type_str = 
             "Option<".to_string()
             +

@@ -2,7 +2,7 @@ use std::{path::Path, io, fs};
 
 use chrono::Utc;
 
-use crate::{models::ddr_req::DomainDrivenRequest, utils::naming_convention::{to_snake_case_plural, to_snake_case}};
+use crate::{models::ddr_req::DomainDrivenRequest, utils::naming_convention::to_snake_case};
 
 use super::file_generator::FileGenerator;
 
@@ -61,10 +61,10 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
          */
         let migrations_dynamic_template = domain_driven_request.generate_postgres_tables();
         let mut counter = 0;
-        for (entity_name, migration) in migrations_dynamic_template {
+        for (entity, migration) in migrations_dynamic_template {
             let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string().parse::<i64>().unwrap() + counter;
             
-            let migration_path = format!("{}_{}.sql", timestamp, to_snake_case_plural(&entity_name));
+            let migration_path = format!("{}_{}.sql", timestamp, to_snake_case(&entity.plural_name));
             self.generate_file(String::new(), migration, &format!("{}/{}/{}", out_dir, MIGRATIONS_DIR, migration_path))?;
             counter += 1;
         }
@@ -80,8 +80,8 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
         let system_controller_static_template = std::fs::read_to_string(system_controller_static_template_path)?;
         self.generate_file(system_controller_static_template, String::new(), &format!("{}/{}/system_controller.rs", out_dir, CONTROLLERS_DIR))?;
         let controllers_dynamic_templates = domain_driven_request.generate_controllers();
-        for (entity_name, controller) in controllers_dynamic_templates {
-            let controller_path = format!("{}_controller.rs", to_snake_case_plural(&entity_name));
+        for (entity, controller) in controllers_dynamic_templates {
+            let controller_path = format!("{}_controller.rs", to_snake_case(&entity.plural_name));
             self.generate_file(String::new(), controller, &format!("{}/{}/{}", out_dir, CONTROLLERS_DIR, controller_path))?;
         }
 
@@ -111,8 +111,8 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
         let models_mods_dynamic_template = domain_driven_request.generate_model_mods();
         self.generate_file(models_mod_static_template, models_mods_dynamic_template, &format!("{}/{}/mod.rs", out_dir, MODELS_DIR))?;
         let models_dynamic_templates = domain_driven_request.generate_models();
-        for (entity_name, model) in models_dynamic_templates {
-            let model_path = format!("{}.rs", to_snake_case(&entity_name));
+        for (entity, model) in models_dynamic_templates {
+            let model_path = format!("{}.rs", to_snake_case(&entity.name));
             self.generate_file(String::new(), model, &format!("{}/{}/{}", out_dir, MODELS_DIR, model_path))?;
         }
 
@@ -122,8 +122,8 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
         let services_mods_dynamic_template = domain_driven_request.generate_service_mods();
         self.generate_file(String::new(), services_mods_dynamic_template, &format!("{}/{}/mod.rs", out_dir, SERVICES_DIR))?;
         let services_dynamic_templates = domain_driven_request.generate_services();
-        for (entity_name, service) in services_dynamic_templates {
-            let service_path = format!("{}_service.rs", to_snake_case_plural(&entity_name));
+        for (entity, service) in services_dynamic_templates {
+            let service_path = format!("{}_service.rs", to_snake_case(&entity.plural_name));
             self.generate_file(String::new(), service, &format!("{}/{}/{}", out_dir, SERVICES_DIR, service_path))?;
         }
 
@@ -133,8 +133,8 @@ impl RustMicroserviceGenerator for RustMicroserviceGeneratorImpl {
         let sources_mods_dynamic_template = domain_driven_request.generate_source_mods();
         self.generate_file(String::new(), sources_mods_dynamic_template, &format!("{}/{}/mod.rs", out_dir, SOURCES_DIR))?;
         let sources_dynamic_templates = domain_driven_request.generate_sources();
-        for (entity_name, source) in sources_dynamic_templates {
-            let source_path = format!("{}_table.rs", to_snake_case_plural(&entity_name));
+        for (entity, source) in sources_dynamic_templates {
+            let source_path = format!("{}_table.rs", to_snake_case(&entity.plural_name));
             self.generate_file(String::new(), source, &format!("{}/{}/{}", out_dir, SOURCES_DIR, source_path))?;
         }
 

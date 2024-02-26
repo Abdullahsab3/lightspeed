@@ -1,4 +1,4 @@
-use crate::utils::naming_convention::to_snake_case;
+use crate::{models::entity::Entity, utils::naming_convention::to_snake_case};
 
 use super::import_templates::ImportGenerator;
 
@@ -12,10 +12,10 @@ pub fn routes_system(services: Arc<ServicesState>) -> Router {
 "#;
 
 pub static AXUM_ENTITIY_COLLECTION_ROUTE_TEMPLATE: &str = r#"
-        .route("/v1/{sc_entity_name}s", get(get_{sc_entity_name}s).post(create_{sc_entity_name}))"#;
+        .route("/v1/{sc_plural_entity}", get(filter_{sc_plural_entity}).post(create_{sc_entity_name}))"#;
 
 pub static AXUM_ENTITY_ROUTE_TEMPLATE: &str = r#"
-        .route("/v1/{sc_entity_name}s/:id", get(get_{sc_entity_name}).put(update_{sc_entity_name}).delete(delete_{sc_entity_name}))"#;
+        .route("/v1/{sc_plural_entity}/:id", get(get_{sc_entity_name}).put(update_{sc_entity_name}).delete(delete_{sc_entity_name}))"#;
 
 pub static ROUTES_FILE_TEMPLATE: &str = r#"
 use std::sync::Arc;
@@ -32,27 +32,27 @@ use crate::services::ServicesState;
 
 
 pub trait AxumRoutesGenerator: ImportGenerator {
-    fn generate_axum_routes(&self, entity_names: &Vec<String>) -> String {
-        let sc_entity_names = entity_names.iter().map(|x| to_snake_case(x)).collect::<Vec<String>>();
+    fn generate_axum_routes(&self, entities: &Vec<&Entity>) -> String {
         let mut axum_routes = String::new();
-        for sc_entity_name in sc_entity_names{
-            let entity_route = AXUM_ENTITY_ROUTE_TEMPLATE.replace("{sc_entity_name}", &sc_entity_name);
+        for entity in entities {
+            let entity_route = AXUM_ENTITY_ROUTE_TEMPLATE.replace("{sc_entity_name}", &to_snake_case(&entity.name));
             let entity_collection_route = AXUM_ENTITIY_COLLECTION_ROUTE_TEMPLATE
-            .replace("{sc_entity_name}", &sc_entity_name);
+            .replace("{sc_entity_name}", &to_snake_case(&entity.name))
+            .replace("{sc_plural_entity}", &to_snake_case(&entity.plural_name));
             axum_routes.push_str(&entity_collection_route);
             axum_routes.push_str(&entity_route);
         }
         axum_routes
     }
 
-    fn generate_axum_routes_system(&self, entity_names: &Vec<String>) -> String {
-        let axum_routes = self.generate_axum_routes(entity_names);
+    fn generate_axum_routes_system(&self, entities: &Vec<&Entity>) -> String {
+        let axum_routes = self.generate_axum_routes(entities);
         AXUM_ROUTES_SYSTEM_TEMPLATE.replace("{axum_entity_routes}", &axum_routes)
     }
 
-    fn generate_routes_file(&self, entity_names: Vec<String>) -> String {
-        let axum_routes_system = self.generate_axum_routes_system(&entity_names);
-        let controller_imports = entity_names.iter().map(|entity_name| self.generate_controller_imports(entity_name)).collect::<Vec<String>>().join("\n");
+    fn generate_routes_file(&self, entities: Vec<&Entity>) -> String {
+        let axum_routes_system = self.generate_axum_routes_system(&entities);
+        let controller_imports = entities.iter().map(|entity| self.generate_controller_imports(&entity)).collect::<Vec<String>>().join("\n");
         ROUTES_FILE_TEMPLATE
         .replace("{routes_system}", &axum_routes_system)
         .replace("{controller_imports}", &controller_imports)

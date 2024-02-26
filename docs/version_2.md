@@ -57,7 +57,7 @@ We can have several types of template expressions:
     - anonymous expressions: These expressions are evaluated and copied to the output. The `struct` template defined above for example is an anonymous expression.
     - named expressions: These expressions are used to define variables that can be used in anonymous expressions. They are only evaluated when an anonymous expression that uses them is evaluated. For example, the `entity_attributes` template defined above is a named expression.
     named expressions are defined using the following syntax:
-        - `name := expression` where `name` is the name of the expression and `expression` is the expression itself. The expression can use other named expressions that are defined before it. For example, the `entity_attributes` template uses the `entity_attribute` template that is defined before it.
+        - `name := a# expression #` where `name` is the name of the expression and `expression` is the expression itself. The expression can use other named expressions that are defined before it. For example, the `entity_attributes` template uses the `entity_attribute` template that is defined before it.
 
 We need to have a way to encapsulate the dynamic expressions in a way that we can easily implement the evaluation of the expressions. We can encapsulate the following properties:
 - For anonymous expressions:
@@ -90,5 +90,4 @@ Evaluating the template and generating the output happens by the following steps
     - For `attribute_name` variable: lookup the attribute in the environment and replace it with the name of the attribute.
     - For `attribute_type` variable: lookup the type mapping in the environment, and lookup the attribute in the environment and replaced it with the mapped type. There is one restriction: `attribute_type` can only be used when `attribute_name` is used in the same expression.
 
-There is one important resitrction: `attribute_name` and `attribute_type` can only be used
-    
+There is one important resitrction: `attribute_name` and `attribute_type` can only be used when `entity_name` is used in the same expression. This is because the `attribute_name` and `attribute_type` are defined in the context of an entity.
