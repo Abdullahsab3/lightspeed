@@ -65,7 +65,10 @@ pub struct DomainDrivenRequest {
 
 impl From<RawDomainDrivenRequest> for DomainDrivenRequest {
     fn from(raw_ddr: RawDomainDrivenRequest) -> Self {
-        let entities = raw_ddr.generate_entities();
+        let entities: Vec<Entity> = raw_ddr.generate_entities();
+        for entity in &entities {
+            entity.verify_entity_constraints(&entities.iter().collect()).unwrap();
+        }
         DomainDrivenRequest {
             service_name: raw_ddr.service_name,
             entities,

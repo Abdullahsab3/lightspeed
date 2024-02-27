@@ -11,7 +11,7 @@ pub type AttributeName = String;
 pub type EntityName = String;
 pub type EntityPluralName = String;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ForeginKey {
     pub entity_name: String,
     pub attribute_name: String,
@@ -36,7 +36,7 @@ impl ForeginKey {
 pub type FilterBy = Vec<AttributeName>;
 pub type UniqueAttributes = Vec<AttributeName>;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Entity {
     pub name: String,
     pub plural_name: String,
@@ -66,7 +66,74 @@ impl Entity {
         self.unique_attributes.iter().any(|unique_attributes| unique_attributes.contains(&attribute_name.to_string()))
     
     }
+
+    /**
+     * Possible constraints:
+     * - All attributes used as primary key, filter by, unique attributes, or foreign keys must be present
+     * - Primary key must be in the attributes
+     * - If there are unique attributes, they need to be present in filter_by
+     * - If an attribute is unique, it cannot be used as a sub attribute in filter_by
+     * For Example:
+     * name is a unique attribute
+     * It is not possible to have a filter_by with: [id, name], since name is already unique
+     */
+    pub fn verify_entity_constraints(&self, entities: &Vec<&Entity>) -> Result<(), String> {
+        let attributes = self.attributes.iter().map(|(attribute_name, _)| attribute_name).collect::<Vec<&String>>();
+
+        if !attributes.contains(&&self.primary_key) {
+            return Err(format!("Primary key {} is not present in the attributes of {}", self.primary_key, self.name));
+        }
+
+        for foreign_key in self.foreign_keys.iter() {
+            // search the foreign key in the other entities
+            let foreign_key_entity = 
+            entities.iter().find(|entity| entity.name == foreign_key.entity_name).expect(&format!("Foreign key entity {} is not present in the entities", foreign_key.entity_name));
+            if !foreign_key_entity.attributes.iter().map(|(attribute_name, _)| attribute_name).collect::<Vec<&String>>().contains(&&foreign_key.attribute_name) {
+                return Err(format!("Foreign key attribute {} is not present in the attributes of {}", foreign_key.attribute_name, foreign_key.entity_name));
+            }
+        }
+
+        for unique_attribute in self.unique_attributes.iter().flatten().collect::<Vec<&String>>() {
+            if !attributes.contains(&unique_attribute) {
+                return Err(format!("Unique attribute {} is not present in the attributes of {}", unique_attribute, self.name));
+            }
+        }
+
+        for filter_by_attribute in self.filter_by.iter().flatten().collect::<Vec<&String>>() {
+            if !attributes.contains(&filter_by_attribute) {
+                return Err(format!("Filter by attribute {} is not present in the attributes of {}", filter_by_attribute, self.name));
+            }
+        }
+
+        // Verify that the unique attributes are present in the filter_by
+        for unique_attribute in self.unique_attributes.iter() {
+            if !self.filter_by.contains(unique_attribute) {
+                return Err(format!("Unique attribute {:?} is not present in the filter_by of {}", unique_attribute, self.name));
+            }
+
+            let common = self.filter_by
+            .iter()
+            .filter(|filter_by| filter_by != &unique_attribute)
+            .any(|filter_by| {println!("{:?}", filter_by); is_sub(&filter_by, &unique_attribute)});
+
+            if common {
+                return Err(format!("Unique attribute {:?} is a sub attribute of another filter_by in {}. It does not make sense to have fine grained filters on unique attributes, since they're unique", unique_attribute, self.name));
+            }
+        }
+
+        Ok(())
+    }
 }
+
+fn is_sub<T: PartialEq>(mut haystack: &[T], needle: &[T]) -> bool {
+    if needle.len() == 0 { return true; }
+    while !haystack.is_empty() {
+        if haystack.starts_with(needle) { return true; }
+        haystack = &haystack[1..];
+    }
+    false
+}
+
 
 impl From<(EntityName, EntityPluralName, RawEntity, RawEntities)> for Entity {
     fn from((entity_name, entity_plural_name, raw_entity, raw_entities): (EntityName, EntityPluralName, RawEntity, RawEntities)) -> Self {
@@ -141,7 +208,7 @@ impl From<(EntityName, EntityPluralName, RawEntity, RawEntities)> for Entity {
 }
 
 
-#[derive(PartialEq, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub enum AttributeType {
     String,
     Uuid,

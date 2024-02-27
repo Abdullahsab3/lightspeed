@@ -280,7 +280,6 @@ pub trait SourceGenerator : CrudQueryGenerator + ModelGenerator + ImportGenerato
     }
 
     fn generate_get_count_fn(&self, entity: &Entity) -> String {
-        let sc_entity_name = to_snake_case(&entity.name);
         let count_query = self.generate_count_query(&entity);
         GET_COUNT_FN
             .replace("{sc_plural_entity}", &to_snake_case(&entity.plural_name))
