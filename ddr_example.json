@@ -1,42 +1,68 @@
 {
-    "service_name": "enelyzer_time_series",
+    "service_name": "testing_entities",
     "entities": [
         {
-            "TimeSeries" : 
+            "Car" : 
             {
-                "time_series_id": "Uuid",
-                "organisation_id": "Uuid",
-                "bucket_id" : "Bucket.id",
-                "time_series_name": "String",
-                "unit": "String",
-                "log_interval": "i32",
-                "created_at": "NaiveDateTime",
-                "filter_by": [["organisation_id", "time_series_name"], "time_series_id"],
-                "primary_key": "time_series_id",
-                "unique_attributes": [["organisation_id", "time_series_name"]]
+                "id": "Uuid",
+                "user_id": "User.id",
+                "technical_name" : "String",
+                "category": "String",
+                "filter_by": [["user_id", "technical_name"], "technical_name"],
+                "primary_key": "id",
+                "unique_attributes": [["technical_name"]]
             }
         },
         {
-            "Bucket" : 
+            "User" : 
             {
                 "id": "Uuid",
                 "name" : "String",
                 "organisation_id": "Uuid",
-                "api_key": "String",
+                "unit": "String",
                 "primary_key": "id",
-                "filter_by": [["organisation_id", "name"], "id"]
+                "filter_by": ["name"]
+            }
+        },
+        {
+            "Location" : {
+                "id": "Uuid",
+                "name": "String",
+                "primary_key": "id",
+                "filter_by": ["name"]
+            }
+        },
+
+        {
+            "Dealer" : {
+                "id": "Uuid",
+                "name": "String",
+                "location": "Location.id",
+                "primary_key": "id",
+                "filter_by": ["name", ["name", "location"]],
+                "unique_attributes": [["name", "location"]]
             }
         }
     ],
     "semantics" : [
         {
-            "TimeSeries" : {
-                "plural": "TimeSeries"
+            "Car" : {
+                "plural": "Cars"
             }
         },
         {
-            "Bucket" : {
-                "plural": "Buckets"
+            "User" : {
+                "plural": "Users"
+            }
+        },
+        {
+            "Location" : {
+                "plural": "Locations"
+            }
+        },
+        {
+            "Dealer" : {
+                "plural": "Dealers"
             }
         }
     ]
