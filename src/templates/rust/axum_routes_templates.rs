@@ -35,7 +35,9 @@ pub trait AxumRoutesGenerator: ImportGenerator {
     fn generate_axum_routes(&self, entities: &Vec<&Entity>) -> String {
         let mut axum_routes = String::new();
         for entity in entities {
-            let entity_route = AXUM_ENTITY_ROUTE_TEMPLATE.replace("{sc_entity_name}", &to_snake_case(&entity.name));
+            let entity_route = AXUM_ENTITY_ROUTE_TEMPLATE
+            .replace("{sc_entity_name}", &to_snake_case(&entity.name))
+            .replace("{sc_plural_entity}", &to_snake_case(&entity.plural_name));
             let entity_collection_route = AXUM_ENTITIY_COLLECTION_ROUTE_TEMPLATE
             .replace("{sc_entity_name}", &to_snake_case(&entity.name))
             .replace("{sc_plural_entity}", &to_snake_case(&entity.plural_name));
